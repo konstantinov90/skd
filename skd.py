@@ -1,9 +1,12 @@
 import copy
 import datetime
 
-import pymongo
+# import pymongo
 
-from utils.environment import py, sql
+from classes import Task, Check
+from utils.db_client import db
+from utils.environment import py, yml, sql
+from utils.aio import aio
 
 rio = {
 "system": "COMPARE",
@@ -81,24 +84,44 @@ source = {
 ],
 }
 
-cli = pymongo.MongoClient('vm-ts-blk-app2')
-db = cli.skd_cache
-tasks, cache = db.tasks, db.cache
+# cli = pymongo.MongoClient('vm-ts-blk-app2')
+# db = cli.skd_cache
+# tasks, cache = db.tasks, db.cache
 
-def run_task(_task):
-    task = copy.deepcopy(_task)
-    pwds = [s['password'] for s in task['sources']]
-    for s in task['sources']:
-        s['password'] = '***'
-    task.update(started=datetime.datetime.now())
-    oid = tasks.insert(task)
-    for s, pwd in zip(task['sources'], pwds):
-        s['password'] = pwd
+async def register_task(_task):
+    task = Task(_task)
+    await task.save()
+    aio.ensure_future(run_task(task))
+    return task.json
 
-    for check in cache.find({'system': task['system'], 'operation': task['code']}, {'_id': 0}):
+async def run_task(task):
+    running_checks = []
+    async for _check in db.cache.find({'system': task['system'], 'operation': task['code'], '$or': task.get('checks', [{}])}, {'_id': 0}):
+        check = Check(_check)
         if check['extension'] == 'py':
-            py(check, task)
+            running_checks.append(aio.ensure_future(py(check, task)))
+        elif check['extension'] == 'sql':
+            running_checks.append(aio.ensure_future(sql(check, task)))
         elif check['extension'] == 'yml':
-            sql(check, task)
+            running_checks.append(aio.ensure_future(yml(check, task)))
 
-    tasks.update_one({'_id': oid}, {'$set': {'finished': datetime.datetime.now()}})
+    await aio.wait(running_checks)
+    await task.finish()
+
+# def run_task(_task):
+#     task = copy.deepcopy(_task)
+#     pwds = [s['password'] for s in task['sources']]
+#     for s in task['sources']:
+#         s['password'] = '***'
+#     task.update(started=datetime.datetime.now())
+#     oid = tasks.insert(task)
+#     for s, pwd in zip(task['sources'], pwds):
+#         s['password'] = pwd
+#
+#     for check in cache.find({'system': task['system'], 'operation': task['code']}, {'_id': 0}):
+#         if check['extension'] == 'py':
+#             py(check, task)
+#         elif check['extension'] == 'yml':
+#             sql(check, task)
+#
+#     tasks.update_one({'_id': oid}, {'$set': {'finished': datetime.datetime.now()}})

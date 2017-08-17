@@ -1,17 +1,16 @@
 import os.path
 
 import git
-import pymongo
 
+from . import aio
 from . import checks
+from .db_client import db
 
-cli = pymongo.MongoClient('vm-ts-blk-app2')
-db = cli.skd_cache
 col = db.cache
 # db.commit.remove()
 
 r = git.Repo('reg')
-(curr_commit,) = db.commit.find()
+curr_commit = {}
 
 # supposed repo form
 # system_code/
@@ -31,7 +30,8 @@ r = git.Repo('reg')
 #######################################################################
 def init_cache():
     '''initialize cache'''
-    col.remove()
+    aio.run(col.remove)
+    aio.run(db.commit.remove)
     r.remotes.origin.pull('master')
     for system in r.tree().trees:
         for operation in system.trees:
@@ -45,15 +45,15 @@ def init_cache():
                     print(type(e), e)
                     continue
                 col.insert(check.get_data())
-    curr_commit["hash"] = r.commit().hexsha
-    db.commit.update({}, curr_commit, upsert=True)
+    curr_commit['hash'] = r.commit().hexsha
+    aio.run(db.commit.insert, curr_commit)
 
-def refresh_cache():
+async def refresh_cache():
     '''pull and refresh cache'''
-    r.remotes.origin.pull('master')
+    await aio.async_run(r.remotes.origin.pull, 'master')
     if r.commit().hexsha == curr_commit['hash']:
         return
-    diff = r.tree(curr_commit['hash']).diff(r.tree(r.commit().hexsha))
+    diff = await aio.async_run(r.tree(curr_commit['hash']).diff, r.tree(r.commit().hexsha))
     for file in diff:
         blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
         blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None

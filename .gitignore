@@ -2,4 +2,5 @@ git
 *.pyc
 __pycache__
 check_results
+reg
 

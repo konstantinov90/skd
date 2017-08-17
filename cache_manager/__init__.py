@@ -1,0 +1,114 @@
+import datetime
+import os.path
+import re
+
+import git
+
+import settings as S
+from utils import aio
+from utils.db_client import db
+from . import checks
+
+col = db.cache
+# db.commit.remove()
+
+r = git.Repo('reg')
+curr_commit = {}
+
+# supposed repo form
+# system_code/
+#             operation1_code/
+#                            check1.py
+#                            check2.sql
+#                            check2.meta
+#             operation2_code/
+#                            check1.py
+#                            check2.sql
+#                            check2.meta
+# system_code/
+#             operation1_code/
+#                            check1.py
+#                            check2.sql
+#                            check2.meta
+#######################################################################
+class Cache(object):
+    def __init__(self):
+        '''initialize cache'''
+        aio.run(col.remove)
+        aio.run(db.commit.remove)
+        r.remotes.origin.pull('master')
+        for system in r.tree().trees:
+            for operation in system.trees:
+                if operation.trees:
+                    raise Exception('supposed repo form condition is not met!')
+                for file in operation.blobs:
+                    blob = checks.GitBlobWrapper(file)
+                    try:
+                        check = aio.run(blob.make_check)
+                    except checks.CheckExtError as e:
+                        print(type(e), e)
+                        continue
+                    aio.run(col.insert, check.data)
+        curr_commit['hash'] = r.commit().hexsha
+        aio.run(db.commit.insert, curr_commit)
+
+        self.refreshing = True
+        self.future, self.waiting = None, None
+
+    async def refresh(self):
+        '''pull and refresh cache'''
+        await aio.aio.wait_for(aio.async_run(r.remotes.origin.pull, 'master'), 60)
+        if r.commit().hexsha == curr_commit['hash']:
+            return
+        diff = await aio.async_run(r.tree(curr_commit['hash']).diff, r.tree(r.commit().hexsha))
+        for file in diff:
+            blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
+            blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None
+            try:
+                check = (await blob_to.make_check()) if blob_to else None
+            except checks.CheckExtError as exc:
+                print(type(e), exc)
+                file.change_type = 'D'
+            if file.change_type == 'D':
+                await col.remove(blob_from.data)
+            elif file.change_type == 'A':
+                await col.insert(check.data)
+            elif re.match(r'^R\d{3}$|^M$', file.change_type):
+                await col.update(blob_from.data, check.data, upsert=True)
+            else:
+                raise ValueError('unexpected change_type for file {}'.format(blob_from.full_path))
+            curr_commit["hash"] = r.commit().hexsha
+            await db.commit.update({}, curr_commit)
+
+    async def refresher(self):
+        timeout_error_wait = 1
+        while True:
+            self.future = aio.aio.ensure_future(self.refresh())
+            self.waiting = aio.aio.ensure_future(aio.aio.sleep(S.CACHE_REFRESH_SECONDS))
+            try:
+                await aio.aio.gather(self.waiting, self.future)
+            except aio.aio.CancelledError:
+                pass
+            except aio.aio.TimeoutError:
+                print('GIT pull timeout, waiting {} before reconnect'.format(timeout_error_wait))
+                await aio.aio.sleep(timeout_error_wait)
+                timeout_error_wait = min(2 * timeout_error_wait, 300)
+                continue
+            except Exception as exc:
+                print(type(exc), exc)
+            if not self.refreshing:
+                await self.future
+                break
+            print('tick {}'.format(datetime.datetime.now()))
+
+    def stop(self):
+        self.refreshing = False
+        self.waiting.cancel()
+
+_CACHE = Cache()
+
+async def refresher():
+    return await _CACHE.refresher()
+
+def stop():
+    return _CACHE.stop()

@@ -1,0 +1,25 @@
+
+<html>
+<head>
+  <title>send task</title>
+</head>
+<body>
+<h1>ВНИМАНИЕ! Требуется ввести пароль</h1>
+<textarea style="height:500px;width:600px" id="text" name="task">{{task}}</textarea>
+<div>
+  <button style="height:20px;width:100px" onclick="send()">Отправить</button>
+</div>
+
+<script src="{{settings.STATIC_URL}}/scripts/jquery-3.2.1.min.js"></script>
+<script>
+function send() {
+  var task = $('#text').val();
+
+  $.post('/rest/send_task', task, function() {
+    window.location.replace("/trade_system");
+  });
+}
+
+</script>
+</body>
+</html>
