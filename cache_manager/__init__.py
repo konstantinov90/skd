@@ -6,8 +6,11 @@ import git
 
 import settings as S
 from utils import aio
+from utils import app_log
 from utils.db_client import db
 from . import checks
+
+LOG = app_log.get_logger(__name__)
 
 col = db.cache
 # db.commit.remove()
@@ -36,7 +39,10 @@ class Cache(object):
         '''initialize cache'''
         aio.run(col.remove)
         aio.run(db.commit.remove)
-        r.remotes.origin.pull('master')
+        try:
+            r.remotes.origin.pull('master')
+        except Exception:
+            pass
         for system in r.tree().trees:
             for operation in system.trees:
                 if operation.trees:
@@ -46,7 +52,7 @@ class Cache(object):
                     try:
                         check = aio.run(blob.make_check)
                     except checks.CheckExtError as e:
-                        print(type(e), e)
+                        LOG.warning('file {} ignored', blob)
                         continue
                     aio.run(col.insert, check.data)
         curr_commit['hash'] = r.commit().hexsha
@@ -66,9 +72,10 @@ class Cache(object):
             blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None
             try:
                 check = (await blob_to.make_check()) if blob_to else None
-            except checks.CheckExtError as exc:
-                print(type(e), exc)
+            except checks.CheckExtError:
+                LOG.warning('file {} ignored', blob_to)
                 file.change_type = 'D'
+
             if file.change_type == 'D':
                 await col.remove(blob_from.data)
             elif file.change_type == 'A':
@@ -76,7 +83,7 @@ class Cache(object):
             elif re.match(r'^R\d{3}$|^M$', file.change_type):
                 await col.update(blob_from.data, check.data, upsert=True)
             else:
-                raise ValueError('unexpected change_type for file {}'.format(blob_from.full_path))
+                raise ValueError('unexpected change_type for file {}', blob_from.full_path)
             curr_commit["hash"] = r.commit().hexsha
             await db.commit.update({}, curr_commit)
 
@@ -90,16 +97,16 @@ class Cache(object):
             except aio.aio.CancelledError:
                 pass
             except aio.aio.TimeoutError:
-                print('GIT pull timeout, waiting {} before reconnect'.format(timeout_error_wait))
+                LOG.warning('GIT pull timeout, waiting {} before reconnect', timeout_error_wait)
                 await aio.aio.sleep(timeout_error_wait)
                 timeout_error_wait = min(2 * timeout_error_wait, 300)
                 continue
             except Exception as exc:
-                print(type(exc), exc)
+                LOG.error(type(exc), exc)
             if not self.refreshing:
                 await self.future
                 break
-            print('tick {}'.format(datetime.datetime.now()))
+            LOG.info('git tick')
 
     def stop(self):
         self.refreshing = False

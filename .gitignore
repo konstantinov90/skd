@@ -3,4 +3,5 @@ git
 __pycache__
 check_results
 reg
+logs
 

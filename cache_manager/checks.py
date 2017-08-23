@@ -5,7 +5,10 @@ import yaml
 
 import aiofiles
 
+from utils import app_log
 from utils.environment import *
+
+LOG = app_log.get_logger(__name__)
 
 class CheckExtError(Exception):
     pass
@@ -22,6 +25,9 @@ class GitBlobWrapper(object):
             path, el = os.path.split(path)
             check_op_sys.append(el)
         self.check, self.operation, self.system = check_op_sys
+
+    def __repr__(self):
+        return self.full_path
 
     async def make_check(self):
         if self.ext == 'yml':
@@ -52,12 +58,13 @@ class Check(object):
         self.content, self.meta = {}, {}
 
     async def _init(self):
+        async def read_file(filename, encoding='utf-8'):
+            async with aiofiles.open(self.blob.full_path, 'r', encoding=encoding) as fd:
+                return await fd.read()
         try:
-            async with aiofiles.open(self.blob.full_path, 'r', encoding='utf-8') as fd:
-                self.content = await fd.read()
+            self.content = await read_file(self.blob.full_path)
         except UnicodeDecodeError:
-            async with aiofiles.open(self.blob.full_path, 'r', encoding='windows-1251') as fd:
-                self.content = await fd.read()
+            self.content = await read_file(self.blob.full_path, encoding='windows-1251')
 
         self.content = re.sub(';\s*$', '', self.content)
 
@@ -73,14 +80,14 @@ class YmlCheck(Check):
         self.meta = await aio.async_run(yaml.load, self.content)
         self.content = self.meta.pop('query')
 
-        print('yml check {}'.format(self.blob.full_path))
+        LOG.info('yml check {}', self.blob.full_path)
 
 
 class SqlCheck(Check):
     async def _init(self):
         await super()._init()
 
-        print('sql check {}'.format(self.blob.full_path))
+        LOG.info('sql check {}', self.blob.full_path)
 
 
 class PyCheck(Check):
@@ -93,4 +100,4 @@ class PyCheck(Check):
         func = locals()['run_check']
         self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
 
-        print('python check {}'.format(self.blob.full_path))
+        LOG.info('python check {}', self.blob.full_path)

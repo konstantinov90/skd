@@ -10,6 +10,7 @@ class BaseDict(collections.UserDict):
     collection = 'some_collection'
 
     def __init__(self, dct):
+        dct = {k: v for k, v in dct.items() if k not in ('_id', 'started', 'finished')}
         super().__init__(dct)
         self.oid = None
 
