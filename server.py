@@ -1,14 +1,17 @@
-import bson
+import base64
 import hashlib
+from operator import itemgetter
 import os
 import os.path
+import re
 
 import aiofiles
 import aiohttp.web as web
 # from aiohttp_auth import auth, acl
 import aiohttp_cors
-import aiohttp_jinja2
-import jinja2
+import aiohttp_session
+from aiohttp_session.cookie_storage import EncryptedCookieStorage
+from cryptography import fernet
 from multidict import MultiDict
 
 import skd
@@ -17,16 +20,28 @@ import cache_manager
 from utils.aio import aio
 import utils.authorization as auth
 from utils.db_client import db
-from utils import json
+from utils import json_util
+from utils import app_log
 
+
+async def index(request):
+    return web.Response(text='SKD rest api')
 
 async def login(request):
-    params = await request.json()
+    params = request['body']
     try:
-        usr, pwd = params['username'], params['password']
+        usr, pwd = params.pop('username'), params.pop('password')
         (user, ) = await db.users.find({'_id': usr}).to_list(None)
-    except (KeyError, ValueError):
+    except KeyError:
+        return web.HTTPBadRequest()
+    except ValueError:
         return web.HTTPForbidden()
+
+    # session = await aiohttp_session.get_session(request)
+    # session['_id'] = fernet.Fernet.generate_key().decode()
+    # print(session['_id'], request.headers['user-agent'])
+    # session.update(params)
+
     if hashlib.sha1(user['salt'] + bytes(pwd, encoding='utf-8')).digest() == user['password']:
         await auth.auth.remember(request, usr)
         return web.Response(body='OK'.encode('utf-8'))
@@ -34,74 +49,95 @@ async def login(request):
 
 @auth.acl_required('admin')
 async def create_user(request):
-    params = await request.json()
     try:
-        usr, pwd = params['username'], params['password']
+        usr, pwd = request['body']['username'], request['body']['password']
     except KeyError:
         return web.HTTPBadRequest()
     salt = os.urandom(16)
     enc_pwd = hashlib.sha1(salt + bytes(pwd, encoding='utf-8')).digest()
     try:
-        await db.users.insert({"_id": usr, "salt": salt, "password": enc_pwd, 'permissions': params.get('permissions', [])})
+        user = {"_id": usr, "salt": salt, "permissions": request['body'].get('permissions', [])}
+        await db.users.insert(user)
     except Exception as exc:
         return web.HTTPConflict(text=str(exc))
     else:
         return web.Response(text='user {} created'.format(usr))
 
-@auth.auth.auth_required
-async def test_auth_required(request):
-    return web.Response(text='authorized')
-
-@auth.acl_required('register_check')
-async def test_acl_required(request):
-    return web.Response(text='TS check registered')
-
-
-async def index(request):
-    return web.Response(text='SKD rest api')
-
-@auth.acl_required('register_check')
+@auth.system_required('register_check')
+@json_util.response_encoder
 async def receive_task(request):
-    print(await request.read())
-    task = await request.json()
-    groups = await auth.acl.get_user_groups(request)
-    try:
-        system_code = task['system']
-    except KeyError:
-        return web.HTTPForbidden(text='System code required!')
-    if task['system'] + 'rw' not in groups:
-        msg = 'you cannot register task for system {}!'.format(task['system'])
-        return web.HTTPForbidden(text=msg)
-    return web.json_response(await skd.register_task(task))
+    return await skd.register_task(request['body'])
+
+mem_cache = {}
+
+async def get_last_checks(query):
+    regexpr = re.compile('^(?!_).*')
+
+    checks = {}
+    key = itemgetter(*'system operation name extension'.split())
+    print(query)
+    async for task in db.tasks.find(query).sort([('started', -1)]):
+        task_id = task['_id']
+        async for check in db.checks.find({'task_id': task_id}).sort([('name', 1), ('extension', 1)]):
+            current_key = key(check)
+            if current_key in checks:
+                continue
+            checks[current_key] = check
+    check_tmpls = await db.cache.find({
+        'system': query['system'],
+        'operation': regexpr
+    }, {'content': 0}).sort([('operation', 1), ('name', 1), ('extension', 1)]).to_list(None)
+    for check_tmpl in check_tmpls:
+        check = checks.get(key(check_tmpl))
+        if check:
+            check_tmpl['check'] = check
+    return check_tmpls
+
+
+@auth.system_required('view')
+@json_util.response_encoder
+async def cached_get_last_checks(request):
+
+    def hash_obj(obj):
+        dummy = bytes(json_util.dumps(obj), encoding='utf-8')
+        return hashlib.sha1(dummy).digest()
+
+    query = request['body']['query']
+    force_reload = request['body'].get('force_reload')
+    key = hash_obj(query)
+    # print(request['key'])
+
+    check_tmpls = None
+
+    check_tmpls = await get_last_checks(query)
+    if force_reload:
+        print(request.headers)
+        mem_cache[key] = check_tmpls
+        return check_tmpls
+
+    while check_tmpls == mem_cache[key]:
+        check_tmpls = await get_last_checks(query)
+        await aio.sleep(1)
+        print('tick', query)
+
+    mem_cache[key] = check_tmpls
+    return check_tmpls
 
 
 def getter(collection):
-    @auth.acl_required('view')
+
+    @auth.system_required('view')
+    @json_util.response_encoder
     async def route(request):
-        try:
-            inp = await request.json()
-            print(inp, request)
-        except json.json.decoder.JSONDecodeError as exc:
-            return web.HTTPBadRequest(text=str(exc))
-        groups = set(await auth.acl.get_user_groups(request))
-        print(await auth.auth.get_auth(request))
-        query = json.to_object_id(inp.get('query', {}))
+        query = request['body']['query']
 
-        system = query.get('system')
+        sort = request['body'].get('sort')
+        skip = request['body'].get('skip')
+        limit = request['body'].get('limit')
 
-        required_groups = {'super'}
-        msg = 'try filtering by system!'
-        if system is not None:
-            required_groups.add(system + 'r')
-            required_groups.add(system + 'rw')
-            msg = 'you cannot view system {}!'.format(system)
-        if not groups.intersection(required_groups):
-            return web.HTTPForbidden(text=msg)
-
-        sort, skip, limit = inp.get('sort'), inp.get('skip'), inp.get('limit')
         cursor = db.get_collection(collection)
         try:
-            cursor = cursor.find(query, inp.get('project'))
+            cursor = cursor.find(query, request['body'].get('project'))
             if sort is not None:
                 cursor = cursor.sort(sort)
             if skip is not None:
@@ -112,8 +148,16 @@ def getter(collection):
         except Exception as exc:
             return web.HTTPBadRequest(text='{}\nRemember to use pymongo syntax!\n'.format(str(exc)))
         else:
-            return web.json_response(json.dumps(data))
+            return data
     return route
+
+async def get_archive(request):
+    task_id = request['body']['task_id']
+    msg = ''
+    async for check in db.checks.find({'task_id': task_id}):
+        filesize = os.stat(check['result_filename']).st_size
+        msg += '{} {} {}\n'.format(filesize, check['result_filename'], check['name'])
+    return web.Response(text=msg, headers={"X-Archive-Files": "zip"})
 
 
 async def get_file(request):
@@ -136,8 +180,6 @@ async def get_file(request):
     await resp.prepare(request)
     async with aiofiles.open(query['f'], 'rb') as fd:
         resp.write(await fd.read())
-    # async for piece in Request.stream_registry(tdate):
-    #     resp.write(piece)
     return resp
 
 async def on_shutdown(app):
@@ -145,30 +187,32 @@ async def on_shutdown(app):
     cache_manager.stop()
     await app['refresher']
 
-
 def init(loop):
     middlewares = [
+        json_util.request_parser_middleware,
         auth.auth_middleware,
-        auth.acl_middleware
+        auth.acl_middleware,
+        app_log.access_log_middleware,
     ]
 
     app = web.Application(loop=loop, middlewares=middlewares)
+
     cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True)})
 
-    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('./templates'))
+    fernet_key = fernet.Fernet.generate_key()
+    secret_key = base64.urlsafe_b64decode(fernet_key)
+    aiohttp_session.setup(app, EncryptedCookieStorage(secret_key))
+
     app.router.add_get('/', index)
     cors.add(app.router.add_post('/rest/send_task', receive_task))
     for dimension in 'cache tasks checks'.split():
         cors.add(app.router.add_post('/rest/' + dimension, getter(dimension)))
-    # app.router.add_get(trade_system.rest_url, ts)
-    # app.router.add_get('/trade_system', trade_system.view)
-    # app.router.add_get('/trade_system/send_task', trade_system.send_task)
+    app.router.add_post('/rest/get_last_checks', cached_get_last_checks)
     app.router.add_get('/files', get_file)
+    app.router.add_post('/archive', get_archive)
 
     cors.add(app.router.add_post('/auth', login))
     app.router.add_post('/create_user', create_user)
-    cors.add(app.router.add_get('/test_auth_required', test_auth_required))
-    app.router.add_get('/test_acl_required', test_acl_required)
 
     app['refresher'] = aio.ensure_future(cache_manager.refresher())
 

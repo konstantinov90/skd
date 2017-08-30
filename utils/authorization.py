@@ -2,6 +2,7 @@ from functools import partial
 import hashlib
 import os
 
+from aiohttp import web
 import aiohttp_auth.auth as auth
 import aiohttp_auth.acl as acl
 
@@ -31,3 +32,26 @@ async def get_acl_context():
 
 def acl_required(permission):
     return acl.decorators.acl_required(permission, aio.run(get_acl_context))
+
+def system_required(permission):
+    print('system required factory')
+    def _decorator(target_func):
+        print('system required decorator')
+        @acl_required(permission)
+        async def _wrapper(request):
+            groups = set(await acl.get_user_groups(request))
+
+            system = request['body'].get('query', {}).get('system')
+
+            required_groups = {'super'}
+            msg = 'try filtering by system!'
+            if system is not None:
+                required_groups.add(system + 'r')
+                required_groups.add(system + 'rw')
+                msg = 'you cannot view system {}!'.format(system)
+            if not groups.intersection(required_groups):
+                return web.HTTPForbidden(text=msg)
+            return await target_func(request)
+
+        return _wrapper
+    return _decorator

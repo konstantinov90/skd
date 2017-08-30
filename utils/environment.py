@@ -1,39 +1,30 @@
-import copy
 import csv
 import datetime
 import functools
 import inspect
-import os.path
 import traceback
 from collections import abc
 from operator import itemgetter
+import os
 
 import aiofiles
 import xlsxwriter
-# import pymongo
 
 from . import DB, aio
 from .aiofiles_adapter import Adapter
 from .zip_join import zip_join
 
-# cli = pymongo.MongoClient('vm-ts-blk-app2')
-# db = cli.skd_cache
-# checks = db.checks
-
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
 def single_connection(check, task):
     def decorator(target_func):
-        if inspect.iscoroutinefunction(target_func):
-            @functools.wraps(target_func)
-            async def result_func(*args):
-                (con_data,) = task['sources']
+        @functools.wraps(target_func)
+        async def result_func(*args):
+            (con_data,) = task['sources']
+            if inspect.iscoroutinefunction(target_func):
                 con = await DB.OracleConnection.get(*get_ora_con_str(con_data))
                 return await target_func(*args, con, con_data['ops'])
-        else:
-            @functools.wraps(target_func)
-            def result_func(*args):
-                (con_data,) = task['sources']
+            else:
                 con = DB.OracleConnection(*get_ora_con_str(con_data))
                 return target_func(*args, con, con_data['ops'])
         return result_func
@@ -54,7 +45,7 @@ def double_connection(check, task):
                 return await target_func(*args, *fwd)
         else:
             @functools.wraps(target_func)
-            def result_func(*args):
+            async def result_func(*args):
                 fwd = []
                 for con_data in task['sources']:
                     con = DB.OracleConnection(*get_ora_con_str(con_data))

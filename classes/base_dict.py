@@ -34,14 +34,14 @@ class BaseDict(collections.UserDict):
     async def finish(self, **kwargs):
         await self.put(finished=datetime.datetime.now(), **kwargs)
 
-    @property
-    def json(self):
-        dct = copy.deepcopy(self.data)
-        for s in dct['sources']:
-            s['password'] = '***'
-        for k, v in dct.items():
-            if isinstance(v, (datetime.datetime, bson.ObjectId)):
-                dct[k] = str(v)
-            else:
-                dct[k] = v
-        return dct
+    # @property
+    # def json(self):
+    #     dct = copy.deepcopy(self.data)
+    #     for s in dct['sources']:
+    #         s['password'] = '***'
+    #     for k, v in dct.items():
+    #         if isinstance(v, (datetime.datetime, bson.ObjectId)):
+    #             dct[k] = str(v)
+    #         else:
+    #             dct[k] = v
+    #     return dct

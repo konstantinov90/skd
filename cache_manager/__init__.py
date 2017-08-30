@@ -15,7 +15,8 @@ LOG = app_log.get_logger(__name__)
 col = db.cache
 # db.commit.remove()
 
-r = git.Repo('reg')
+# r = git.Repo('reg')
+repos_dir = 'reg'
 curr_commit = {}
 
 # supposed repo form
@@ -37,14 +38,20 @@ curr_commit = {}
 class Cache(object):
     def __init__(self):
         '''initialize cache'''
+        self.repos = {}
         aio.run(col.remove)
         aio.run(db.commit.remove)
-        try:
-            r.remotes.origin.pull('master')
-        except Exception:
-            pass
-        for system in r.tree().trees:
-            for operation in system.trees:
+        if not os.path.isdir(repos_dir):
+            os.mkdir(repos_dir)
+        for repo_name, url in S.REPOS.items():
+            repo_path = os.path.join(repos_dir, repo_name)
+            try:
+                repo = git.Repo(repo_path)
+                repo.remotes.origin.pull('master')
+            except git.exc.NoSuchPathError:
+                repo = git.Repo.clone_from(url, repo_path)
+            self.repos[repo_name] = repo
+            for operation in repo.tree().trees:
                 if operation.trees:
                     raise Exception('supposed repo form condition is not met!')
                 for file in operation.blobs:
@@ -55,7 +62,7 @@ class Cache(object):
                         LOG.warning('file {} ignored', blob)
                         continue
                     aio.run(col.insert, check.data)
-        curr_commit['hash'] = r.commit().hexsha
+            curr_commit[repo_name] = repo.commit().hexsha
         aio.run(db.commit.insert, curr_commit)
 
         self.refreshing = True
@@ -63,29 +70,30 @@ class Cache(object):
 
     async def refresh(self):
         '''pull and refresh cache'''
-        await aio.aio.wait_for(aio.async_run(r.remotes.origin.pull, 'master'), 60)
-        if r.commit().hexsha == curr_commit['hash']:
-            return
-        diff = await aio.async_run(r.tree(curr_commit['hash']).diff, r.tree(r.commit().hexsha))
-        for file in diff:
-            blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
-            blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None
-            try:
-                check = (await blob_to.make_check()) if blob_to else None
-            except checks.CheckExtError:
-                LOG.warning('file {} ignored', blob_to)
-                file.change_type = 'D'
+        for repo_name, repo in self.repos.items():
+            await aio.aio.wait_for(aio.async_run(repo.remotes.origin.pull, 'master'), 60)
+            if repo.commit().hexsha == curr_commit[repo_name]:
+                continue
+            diff = await aio.async_run(repo.tree(curr_commit[repo_name]).diff, repo.tree(repo.commit().hexsha))
+            for file in diff:
+                blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
+                blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None
+                try:
+                    check = (await blob_to.make_check()) if blob_to else None
+                except checks.CheckExtError:
+                    LOG.warning('file {} ignored', blob_to)
+                    file.change_type = 'D'
 
-            if file.change_type == 'D':
-                await col.remove(blob_from.data)
-            elif file.change_type == 'A':
-                await col.insert(check.data)
-            elif re.match(r'^R\d{3}$|^M$', file.change_type):
-                await col.update(blob_from.data, check.data, upsert=True)
-            else:
-                raise ValueError('unexpected change_type for file {}', blob_from.full_path)
-            curr_commit["hash"] = r.commit().hexsha
-            await db.commit.update({}, curr_commit)
+                if file.change_type == 'D':
+                    await col.remove(blob_from.data)
+                elif file.change_type == 'A':
+                    await col.insert(check.data)
+                elif re.match(r'^R\d{3}$|^M$', file.change_type):
+                    await col.update(blob_from.data, check.data, upsert=True)
+                else:
+                    raise ValueError('unexpected change_type for file {}', blob_from.full_path)
+                curr_commit[repo_name] = repo.commit().hexsha
+        await db.commit.update({}, curr_commit)
 
     async def refresher(self):
         timeout_error_wait = 1

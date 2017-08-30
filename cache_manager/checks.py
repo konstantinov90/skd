@@ -20,11 +20,12 @@ class GitBlobWrapper(object):
         path = blob.abspath
         path, _ext = os.path.splitext(path)
         self.ext = _ext.strip('.').lower()
-        check_op_sys = []
-        for _ in range(3):
+        check_op = []
+        for _ in range(2):
             path, el = os.path.split(path)
-            check_op_sys.append(el)
-        self.check, self.operation, self.system = check_op_sys
+            check_op.append(el)
+        self.check, self.operation = check_op
+        _, self.system = os.path.split(blob.repo.working_tree_dir)
 
     def __repr__(self):
         return self.full_path
