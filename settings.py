@@ -10,6 +10,8 @@ LOG_NAME = r'logs/app.log'
 
 DEBUG = False
 
+PORT = 9000
+
 REPOS = {
     "TS": 'git.rosenergo.com:u/konstantinov/SKD/TS',
     "TSIII": 'git.rosenergo.com:u/konstantinov/SKD/TSIII',

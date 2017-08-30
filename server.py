@@ -219,4 +219,4 @@ def init(loop):
     app.on_shutdown.append(on_shutdown)
     return app
 
-web.run_app(init(aio.get_event_loop()), port=9000)
+web.run_app(init(aio.get_event_loop()), port=settings.PORT)
