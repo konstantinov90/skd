@@ -5,6 +5,8 @@ import json
 import bson
 from aiohttp import web
 
+import settings
+
 _DATETIME_FMT = '%Y-%m-%d %H:%M:%S'
 
 class JSONEncoder(json.JSONEncoder):
@@ -15,10 +17,13 @@ class JSONEncoder(json.JSONEncoder):
             return o.strftime(_DATETIME_FMT)
         return json.JSONEncoder.default(self, o)
 
-_ENCODER = JSONEncoder()
+if settings.DEBUG:
+    _ENCODER = JSONEncoder(indent=2)
+else:
+    _ENCODER = JSONEncoder()
 
-def dumps(obj):
-    return _ENCODER.encode(obj)
+def dumps(obj, **kwargs):
+    return _ENCODER.encode(obj, **kwargs)
 
 def to_object_id(_obj):
     obj = copy.deepcopy(_obj)

@@ -8,7 +8,7 @@ CACHE_REFRESH_SECONDS = 5
 
 LOG_NAME = r'logs/app.log'
 
-DEBUG = False
+DEBUG = True
 
 PORT = 9000
 
