@@ -17,6 +17,7 @@ from multidict import MultiDict
 import skd
 import cache_manager
 
+import settings
 from utils.aio import aio
 import utils.authorization as auth
 from utils.db_client import db
