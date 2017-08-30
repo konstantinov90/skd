@@ -56,7 +56,7 @@ async def create_user(request):
     salt = os.urandom(16)
     enc_pwd = hashlib.sha1(salt + bytes(pwd, encoding='utf-8')).digest()
     try:
-        user = {"_id": usr, "salt": salt, "permissions": request['body'].get('permissions', [])}
+        user = {"_id": usr, "salt": salt, "password": enc_pwd, "permissions": request['body'].get('permissions', [])}
         await db.users.insert(user)
     except Exception as exc:
         return web.HTTPConflict(text=str(exc))
