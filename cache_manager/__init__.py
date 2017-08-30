@@ -110,7 +110,7 @@ class Cache(object):
                 timeout_error_wait = min(2 * timeout_error_wait, 300)
                 continue
             except Exception as exc:
-                LOG.error(type(exc), exc)
+                LOG.error('{}: {}', type(exc), exc)
             if not self.refreshing:
                 await self.future
                 break
