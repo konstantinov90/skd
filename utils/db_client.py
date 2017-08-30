@@ -1,6 +1,8 @@
 import motor.motor_asyncio as motor
 
-import settings as S
+import settings
 from . import aio
 
-db = motor.AsyncIOMotorClient(S.db, io_loop=aio.aio.get_event_loop()).get_default_database()
+db = motor.AsyncIOMotorClient(
+    settings.DATABASE, io_loop=aio.aio.get_event_loop()
+).get_default_database()

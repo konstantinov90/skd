@@ -1,6 +1,6 @@
-db = 'mongodb://skd:123456@vm-ts-blk-app2/skd_cache'
+DATABASE = 'mongodb://skd:123456@vm-ts-blk-app2/skd_cache'
 
-check_result_path = 'check_results'
+CHECK_RESULT_PATH = 'check_results'
 
 MAX_CONCURRENT_CHECKS = 20
 

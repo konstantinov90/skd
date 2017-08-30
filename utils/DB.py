@@ -152,7 +152,7 @@ class OracleConnection(_DBConnection):
 
     def __init__(self, *conn_str, **kwargs):
         super().__init__()
-        self.con_dummy = partial(cx_Oracle.connect, *conn_str, threaded=True)
+        self.con_dummy = partial(cx_Oracle.connect, *conn_str, threaded=True, encoding='utf-8')
         if 'do_not_connect' not in kwargs:
             self.con = self.con_dummy()
         # self.con.outputtypehandler = OraTypeHandler

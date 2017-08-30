@@ -59,20 +59,19 @@ def output_file_descriptor(check, task, ext=None):
     def decorator(target_func):
         # filename = lambda: check['result_filename'] + ('.' + ext if ext else '')
 
-        if inspect.iscoroutinefunction(target_func):
-            @functools.wraps(target_func)
-            async def result_func(*args):
-                await check.generate_filename(ext)
-                async with aiofiles.open(check['result_filename'], 'w') as fd:
-                    return await target_func(*args, fd)
-        else:
-            @functools.wraps(target_func)
-            async def result_func(*args):
-                await check.generate_filename(ext)
-                fd = await aio.async_run(open, check['result_filename'], 'w')
+        @functools.wraps(target_func)
+        async def result_func(*args):
+            await check.generate_filename(ext)
+            if inspect.iscoroutinefunction(target_func):
+                async with aiofiles.open(check.filename, 'w') as fd:
+                    res = await target_func(*args, fd)
+            else:
+                fd = await aio.async_run(open, check.result_filename, 'w')
                 res = await aio.async_run(target_func, *args, fd)
                 fd.close()
-                return res
+            await check.calc_crc32()
+            return res
+
         return result_func
     return decorator
 
@@ -103,13 +102,13 @@ def environment(target):
 
                 await check.generate_filename('xlsx')
 
-                wb = xlsxwriter.Workbook(check['result_filename'])
+                wb = xlsxwriter.Workbook(check.filename)
                 sh = wb.add_worksheet(check['name'][:31])
                 for i, row in enumerate(result):
                     # for j, el in enumerate(row):
                     await aio.async_run(sh.write_row, i, 0, row)
                 await aio.async_run(wb.close)
-
+                await check.calc_crc32()
 
 
                 # adapter = Adapter()

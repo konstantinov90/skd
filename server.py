@@ -165,7 +165,7 @@ async def get_file(request):
     query = request.query
     _, filename = os.path.split(query['f'])
     cnt_dsp = 'attachment; filename="{}"'.format(filename)
-    ext = filename.split('.')[-1]
+    ext = os.path.splitext(filename)[-1]
     if ext == 'xlsx':
         content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     elif ext == 'xls':
@@ -177,9 +177,10 @@ async def get_file(request):
         'CONTENT-DISPOSITION': cnt_dsp,
         'Content-Type': content_type
     }))
-    resp.content_length = os.stat(query['f']).st_size
+    filepath = os.path.join(settings.CHECK_RESULT_PATH, query['f'])
+    resp.content_length = os.stat(filepath).st_size
     await resp.prepare(request)
-    async with aiofiles.open(query['f'], 'rb') as fd:
+    async with aiofiles.open(filepath, 'rb') as fd:
         resp.write(await fd.read())
     return resp
 

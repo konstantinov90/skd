@@ -1,31 +1,17 @@
+import os
+import os.path
+
 from classes import Task, Check
+import settings
 from utils.aio import aio
 from utils.db_client import db
 from utils.environment import py, yml, sql
 
-compare = {
-"system": "COMPARE",
-"code": "TEST_1",
-"sources": [
-    {
-        "login": "facts",
-        "password": "facts",
-        "db": "ts_black",
-        "ops": {
-            "OP": 1
-        }
-    },
-    {
-        "login": "facts",
-        "password": "facts",
-        "db": "ts_black",
-        "ops": {
-            "OP": 2
-        }
-    }
-]
-}
+def init(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
 
+init(settings.CHECK_RESULT_PATH)
 
 async def register_task(_task):
     task = Task(_task)
