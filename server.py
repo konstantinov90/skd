@@ -159,12 +159,12 @@ async def get_archive(request):
     async for check in db.checks.find({'task_id': task_id}):
         if 'finished' not in check or 'result_filename' not in check:
             continue
-        filepath = '/' + os.path.join(settings.CHECK_RESULT_PATH, check['result_filename'])
+        filepath = os.path.join(settings.CHECK_RESULT_PATH, check['result_filename'])
         enc_path = urllib.parse.quote(filepath.encode('utf-8'))
         filesize = os.stat(filepath).st_size
         _, ext = os.path.splitext(check['result_filename'])
         out_filename = check['name'] + ext
-        msg += '{} {} {} {}\n'.format(check['result_crc32'], filesize, enc_path, out_filename)
+        msg += '{} {} /{} {}\n'.format(check['result_crc32'], filesize, enc_path, out_filename)
     return web.Response(text=msg, headers={"X-Archive-Files": "zip"})
 
 
