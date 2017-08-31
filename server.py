@@ -156,7 +156,9 @@ def getter(collection):
 async def get_archive(request):
     task_id = request['body']['task_id']
     msg = ''
+    print(task_id)
     async for check in db.checks.find({'task_id': task_id}):
+        print(check)
         if 'finished' not in check or 'result_filename' not in check:
             continue
         filepath = os.path.join(settings.CHECK_RESULT_PATH, check['result_filename'])
