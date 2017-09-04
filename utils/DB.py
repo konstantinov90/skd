@@ -105,14 +105,18 @@ class _DBConnection(object):
             curs.execute(query, input_data)
 
     @staticmethod
-    async def _run_query(curs, query, input_data):
+    def _run_query(curs, query, input_data):
+        curs.execute(query, input_data)
+
+    @staticmethod
+    async def _async_run_query(curs, query, input_data):
         func = partial(curs.execute, query, **input_data)
         await aio.async_run(func)
 
     def script_cursor(self, query, get_field_names=False, **input_data):
         """get cursor generator"""
         with self.cursor() as curs:
-            aio.run(self._run_query, curs, query, input_data)
+            self._run_query(curs, query, input_data)
 
             if get_field_names:
                 yield tuple(col[0] for col in curs.description)
@@ -125,7 +129,7 @@ class _DBConnection(object):
 
     async def async_script_cursor(self, query, get_field_names=False, **input_data):
         async with self.async_cursor() as curs:
-            await self._run_query(curs, query, input_data)
+            await self._async_run_query(curs, query, input_data)
 
             if get_field_names:
                 yield tuple(col[0] for col in curs.description)
@@ -142,7 +146,7 @@ class _DBConnection(object):
         db_res = []
 
         with self.cursor() as curs:
-            aio.run(self._run_query, curs, query, input_data)
+            self._run_query(curs, query, input_data)
 
             if get_field_names:
                 db_res.append(tuple(col[0] for col in curs.description))
@@ -154,7 +158,7 @@ class _DBConnection(object):
         db_res = []
 
         async with self.async_cursor() as curs:
-            await self._run_query(curs, query, input_data)
+            await self.async_run_query(curs, query, input_data)
 
             if get_field_names:
                 db_res.append(tuple(col[0] for col in curs.description))
@@ -183,7 +187,12 @@ class OracleConnection(_DBConnection):
         # self.con.outputtypehandler = OraTypeHandler
 
     @staticmethod
-    async def _run_query(curs, query, input_data):
+    def _run_query(curs, query, input_data):
+        curs.prepare(query)
+        curs.execute(None, filter_dict(input_data, curs.bindnames))
+
+    @staticmethod
+    async def _async_run_query(curs, query, input_data):
         await aio.async_run(curs.prepare, query)
         bindnames = await aio.async_run(curs.bindnames)
         await aio.async_run(curs.execute, None, filter_dict(input_data, bindnames))
