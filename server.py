@@ -120,7 +120,7 @@ async def cached_get_last_checks(request):
     response_hash = request['body'].get('response_hash')
     key = hash_obj(query)
     # print(request['key'])
-    mem_cache.setdefault(key, {'query': query, 'hash': None})
+    mem_cache.setdefault(key, {'query': query, 'hash': ''})
 
     while response_hash == mem_cache[key]['hash'] and 'response' not in mem_cache[key]:
         mem_cache.refresh_item(key)
