@@ -13,14 +13,14 @@ class Check(BaseDict):
 
     async def save(self):
         self['latest'] = True
-        await super().save()
-        await self.col.update({
+        await self.col.update_many({
             'system': self['system'],
             'operation': self['operation'],
             'name': self['name'],
             'extension': self['extension'],
             'key': self['key'],
         }, {'$set': {'latest': False}})
+        await super().save()
 
     @property
     def filename(self):
