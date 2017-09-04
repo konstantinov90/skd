@@ -109,7 +109,6 @@ async def get_last_checks():
                 check_tmpls_map[current_key].update(check=check)
             response_data = list(check_tmpls_map.values())
             mem_cache[k].update(response=response_data, hash=hash_obj(response_data))
-            print(mem_cache[k])
         await aio.sleep(2)
 
 
