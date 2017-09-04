@@ -65,28 +65,45 @@ async def receive_task(request):
 
 mem_cache = {}
 
-async def get_last_checks(query):
-    regexpr = re.compile('^(?!_).*')
+_REGEXPR = re.compile('^(?!_).*')
+_KEY = itemgetter(*'system operation name extension'.split())
 
+async def _get_last_checks(query):
     checks = {}
     key = itemgetter(*'system operation name extension'.split())
     print(query)
     async for task in db.tasks.find(query).sort([('started', -1)]):
         task_id = task['_id']
         async for check in db.checks.find({'task_id': task_id}).sort([('name', 1), ('extension', 1)]):
-            current_key = key(check)
+            current_key = _KEY(check)
             if current_key in checks:
                 continue
             checks[current_key] = check
     check_tmpls = await db.cache.find({
         'system': query['system'],
-        'operation': regexpr
+        'operation': _REGEXPR,
     }, {'content': 0}).sort([('operation', 1), ('name', 1), ('extension', 1)]).to_list(None)
     for check_tmpl in check_tmpls:
-        check = checks.get(key(check_tmpl))
+        check = checks.get(_KEY(check_tmpl))
         if check:
             check_tmpl['check'] = check
     return check_tmpls
+
+async def get_last_checks(query):
+    try:
+        checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
+    except KeyError:
+        checks_tmpls_query = {'system': query['system']}
+    check_tmpls_map
+    async for check_tmpl in db.cache.find(checks_tmpls_query):
+        current_key = _KEY(check_tmpl)
+        check_tmpls_map[current_key] = check_tmpl
+
+    query['latest'] = True
+    async for check in db.checks.find(query):
+        current_key = _KEY(check)
+        check_tmpls_map[current_key].update(check=check)
+    return list(check_tmpls_map.values())
 
 
 @auth.system_required('view')

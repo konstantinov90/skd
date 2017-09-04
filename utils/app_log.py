@@ -6,7 +6,7 @@ import queue
 
 import settings as S
 
-from . import authorization as auth
+from utils import authorization as auth
 
 __all__ = ('get_logger',)
 
