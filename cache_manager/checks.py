@@ -19,8 +19,11 @@ class GitBlobWrapper(object):
         self.hash = blob.hexsha
 
         dirname, self.filename = os.path.split(blob.abspath)
+        print(dirname, self.filename)
         self.filename = self.filename.strip('"')
+        print(self.filename)
         self.full_path = os.path.join(dirname, self.filename)
+        print(self.full_path)
 
         path, _ext = os.path.splitext(blob.abspath)
         self.ext = _ext.strip('.').lower()
@@ -29,6 +32,7 @@ class GitBlobWrapper(object):
             path, el = os.path.split(path)
             check_op.append(el)
         self.check, self.operation = check_op
+        print(self.check, self.operation)
         _, self.system = os.path.split(blob.repo.working_tree_dir)
 
     def __repr__(self):
