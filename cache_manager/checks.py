@@ -19,7 +19,7 @@ class GitBlobWrapper(object):
         self.hash = blob.hexsha
 
         dirname, self.filename = os.path.split(blob.abspath)
-        LOG.debug(dirname)
+        LOG.error(dirname)
         LOG.warning(self.filename)
         self.filename = self.filename.strip('"')
         LOG.error(self.filename)
