@@ -125,7 +125,7 @@ async def cached_get_last_checks(request):
         mem_cache.refresh_item(key)
         await aio.sleep(2)
 
-    print(mem_cache[key]['cache'], response_hash)
+    print(mem_cache[key]['hash'], response_hash)
     return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
 
     # check_tmpls = await get_last_checks(query)
