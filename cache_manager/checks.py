@@ -26,7 +26,7 @@ class GitBlobWrapper(object):
         LOG.warning(self.operation)
         self.check, self.ext = os.path.splitext(self.filename)
         self.ext = self.ext.strip('.').lower()
-        LOG.error(self.check, '->>', self.extension)
+        LOG.error(self.check, '->>', self.ext)
         self.full_path = os.path.join(path, self.operation, self.filename)
         LOG.warning(self.full_path)
 
