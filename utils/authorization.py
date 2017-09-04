@@ -1,13 +1,12 @@
-from functools import partial
-import hashlib
+from functools import wraps
 import os
 
 from aiohttp import web
 import aiohttp_auth.auth as auth
 import aiohttp_auth.acl as acl
+from aiohttp_auth.permissions import Permission
 
 from .db_client import db
-from . import aio
 
 auth_policy = auth.CookieTktAuthentication(os.urandom(32), 6000000, include_ip=True)
 auth_middleware = auth.auth_middleware(auth_policy)
@@ -23,20 +22,28 @@ async def acl_group_callback(usr):
 acl_middleware = acl.acl_middleware(acl_group_callback)
 
 async def get_acl_context():
+    print('getting context')
     context = []
     async for row in db.acl.find():
         context.append((
-            row['permission'], row['group'], tuple(row['actions'])
+            Permission.Allow if row['permission'] else Permission.Deny,
+            row['group'], tuple(row['actions'])
         ))
     return context
 
 def acl_required(permission):
-    return acl.decorators.acl_required(permission, aio.run(get_acl_context))
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args):
+            request = args[-1]
+            if await acl.get_permitted(request, permission, await get_acl_context()):
+                return await func(*args)
+            raise web.HTTPForbidden()
+        return wrapper
+    return decorator
 
 def system_required(permission):
-    print('system required factory')
     def _decorator(target_func):
-        print('system required decorator')
         @acl_required(permission)
         async def _wrapper(request):
             groups = set(await acl.get_user_groups(request))

@@ -8,16 +8,15 @@ import urllib.parse
 
 import aiofiles
 import aiohttp.web as web
-# from aiohttp_auth import auth, acl
 import aiohttp_cors
 import aiohttp_session
+import pymongo.errors
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from cryptography import fernet
 from multidict import MultiDict
 
 import skd
 import cache_manager
-
 import settings
 from utils.aio import aio
 import utils.authorization as auth
@@ -27,26 +26,20 @@ from utils import app_log
 
 
 async def index(request):
-    return web.Response(text='SKD rest api')
+    return 'SKD rest api'
 
 async def login(request):
-    params = request['body']
     try:
-        usr, pwd = params.pop('username'), params.pop('password')
+        usr, pwd = request['body']['username'], request['body']['password']
         (user, ) = await db.users.find({'_id': usr}).to_list(None)
     except KeyError:
         return web.HTTPBadRequest()
     except ValueError:
         return web.HTTPForbidden()
 
-    # session = await aiohttp_session.get_session(request)
-    # session['_id'] = fernet.Fernet.generate_key().decode()
-    # print(session['_id'], request.headers['user-agent'])
-    # session.update(params)
-
-    if hashlib.sha1(user['salt'] + bytes(pwd, encoding='utf-8')).digest() == user['password']:
+    if hashlib.sha1(user['salt'] + pwd.encode('utf-8')).digest() == user['password']:
         await auth.auth.remember(request, usr)
-        return web.Response(body='OK'.encode('utf-8'))
+        return 'OK'
     return web.HTTPForbidden()
 
 @auth.acl_required('admin')
@@ -56,17 +49,17 @@ async def create_user(request):
     except KeyError:
         return web.HTTPBadRequest()
     salt = os.urandom(16)
-    enc_pwd = hashlib.sha1(salt + bytes(pwd, encoding='utf-8')).digest()
+    permissions = request['body'].get('permissions', [])
+    enc_pwd = hashlib.sha1(salt + pwd.encode('utf-8')).digest()
     try:
-        user = {"_id": usr, "salt": salt, "password": enc_pwd, "permissions": request['body'].get('permissions', [])}
+        user = {"_id": usr, "salt": salt, "password": enc_pwd, "permissions": permissions}
         await db.users.insert(user)
-    except Exception as exc:
+    except pymongo.errors.PyMongoError as exc:
         return web.HTTPConflict(text=str(exc))
     else:
-        return web.Response(text='user {} created'.format(usr))
+        return 'user {} created'
 
 @auth.system_required('register_check')
-@json_util.response_encoder
 async def receive_task(request):
     return await skd.register_task(request['body'])
 
@@ -97,11 +90,10 @@ async def get_last_checks(query):
 
 
 @auth.system_required('view')
-@json_util.response_encoder
 async def cached_get_last_checks(request):
 
     def hash_obj(obj):
-        dummy = bytes(json_util.dumps(obj), encoding='utf-8')
+        dummy = json_util.dumps(obj).encode('utf-8')
         return hashlib.sha1(dummy).digest()
 
     query = request['body']['query']
@@ -127,9 +119,7 @@ async def cached_get_last_checks(request):
 
 
 def getter(collection):
-
     @auth.system_required('view')
-    @json_util.response_encoder
     async def route(request):
         query = request['body']['query']
 
@@ -211,6 +201,8 @@ def init(loop):
     fernet_key = fernet.Fernet.generate_key()
     secret_key = base64.urlsafe_b64decode(fernet_key)
     aiohttp_session.setup(app, EncryptedCookieStorage(secret_key))
+
+    app.middlewares.append(json_util.response_encoder_middleware)
 
     app.router.add_get('/', index)
     cors.add(app.router.add_post('/rest/send_task', receive_task))

@@ -81,7 +81,11 @@ def environment(target):
         # task = copy.deepcopy(_task)
         await aio.lock.acquire()
 
-        check.update(task_id=task['_id'], started=datetime.datetime.now())
+        check.update(
+            task_id=task['_id'],
+            key=task['key'],
+            started=datetime.datetime.now()
+        )
         cached_code = check.pop('content')
         await check.save()
 

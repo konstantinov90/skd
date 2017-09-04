@@ -2,12 +2,32 @@
 # import decimal
 # import copy
 from contextlib import contextmanager
-from functools import partial
+from functools import partial, wraps
 
 import cx_Oracle
-# import settings as S
+import vertica_python
 
-from . import aio
+from utils import aio
+
+##################### MONKEY PATCHING #####################
+
+def _parse_numeric(s):
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
+
+def _numeric_conv(converter):
+    @wraps(converter)
+    def _wrapper(*args, **kwargs):
+        parsers = converter()
+        i = [datatype for datatype, parser in parsers].index('numeric')
+        return tuple(parsers[:i] + [('numeric', _parse_numeric)] + parsers[i + 1:])
+    return _wrapper
+
+vertica_python.vertica.column.Column._data_type_conversions = _numeric_conv(vertica_python.vertica.column.Column._data_type_conversions)
+
+############################################################
 
 ARRAYSIZE = 1000
 
@@ -40,14 +60,20 @@ class async_cursor():
     async def __aexit__(self, exc_type, exc, tb):
         await aio.async_run(self.curs.close)
 
-def filter_dict(dct, subdict):
-    return {i: v for i, v in dct.items() if i.upper() in subdict}
-
 class _DBConnection(object):
     """base DBConnection class"""
+    @classmethod
+    async def get(cls, *args, **kwargs):
+        con = cls(*args, **kwargs, do_not_connect=True)
+        await con._init()
+        return con
+
+    async def _init(self):
+        self.con = await aio.async_run(self.con_func)
+
     def __init__(self):
         self.con = None
-        self.curs = None
+        self.con_func = None
 
     def __del__(self):
         # release connection
@@ -66,9 +92,9 @@ class _DBConnection(object):
     @contextmanager
     def cursor(self):
         """get cursor as context"""
-        self.curs = self.con.cursor()
-        yield self.curs
-        self.curs.close()
+        curs = self.con.cursor()
+        yield curs
+        curs.close()
 
     def async_cursor(self):
         return async_cursor(self)
@@ -78,11 +104,16 @@ class _DBConnection(object):
         with self.cursor() as curs:
             curs.execute(query, input_data)
 
+    @staticmethod
+    async def _run_query(curs, query, input_data):
+        func = partial(curs.execute, query, **input_data)
+        await aio.async_run(func)
+
     def script_cursor(self, query, get_field_names=False, **input_data):
         """get cursor generator"""
         with self.cursor() as curs:
-            curs.prepare(query)
-            curs.execute(None, filter_dict(input_data, curs.bindnames()))
+            aio.run(self._run_query, curs, query, input_data)
+
             if get_field_names:
                 yield tuple(col[0] for col in curs.description)
 
@@ -94,9 +125,8 @@ class _DBConnection(object):
 
     async def async_script_cursor(self, query, get_field_names=False, **input_data):
         async with self.async_cursor() as curs:
-            await aio.async_run(curs.prepare, query)
-            args = filter_dict(input_data, await aio.async_run(curs.bindnames))
-            await aio.async_run(curs.execute, None, args)
+            await self._run_query(curs, query, input_data)
+
             if get_field_names:
                 yield tuple(col[0] for col in curs.description)
 
@@ -112,9 +142,8 @@ class _DBConnection(object):
         db_res = []
 
         with self.cursor() as curs:
-            curs.prepare(query)
+            aio.run(self._run_query, curs, query, input_data)
 
-            curs.execute(None, filter_dict(input_data, curs.bindnames()))
             if get_field_names:
                 db_res.append(tuple(col[0] for col in curs.description))
             db_res += curs.fetchall()
@@ -125,9 +154,7 @@ class _DBConnection(object):
         db_res = []
 
         async with self.async_cursor() as curs:
-            await aio.async_run(curs.prepare, query)
-            args = filter_dict(input_data, await aio.async_run(curs.bindnames))
-            await aio.async_run(curs.execute, None, args)
+            await self._run_query(curs, query, input_data)
 
             if get_field_names:
                 db_res.append(tuple(col[0] for col in curs.description))
@@ -140,22 +167,32 @@ class _DBConnection(object):
 # def OraTypeHandler(cursor, name, defaultType, size, precision, scale):
 #     if defaultType == cx_Oracle.NUMBER:
 #         return cursor.var(str, 100, cursor.arraysize, outconverter=decimal.Decimal)
-
+def filter_dict(dct, subdict):
+    return {i: v for i, v in dct.items() if i.upper() in subdict}
 
 class OracleConnection(_DBConnection):
     """This class establishes connection to ORACLE DataBase."""
-    @staticmethod
-    async def get(*conn_str):
-        con = OracleConnection(*conn_str, do_not_connect=True)
-        await con._init()
-        return con
-
-    def __init__(self, *conn_str, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
-        self.con_dummy = partial(cx_Oracle.connect, *conn_str, threaded=True, encoding='utf-8')
-        if 'do_not_connect' not in kwargs:
-            self.con = self.con_dummy()
+        do_not_connect = kwargs.pop('do_not_connect', False)
+        kwargs.setdefault('threaded', True)
+        kwargs.setdefault('encoding', 'utf-8')
+        self.con_func = partial(cx_Oracle.connect, *args, **kwargs)
+        if not do_not_connect:
+            self.con = self.con_func()
         # self.con.outputtypehandler = OraTypeHandler
 
-    async def _init(self):
-        self.con = await aio.async_run(self.con_dummy)
+    @staticmethod
+    async def _run_query(curs, query, input_data):
+        await aio.async_run(curs.prepare, query)
+        bindnames = await aio.async_run(curs.bindnames)
+        await aio.async_run(curs.execute, None, filter_dict(input_data, bindnames))
+
+class VerticaConnection(_DBConnection):
+    """This class establishes connection to Vertica DataBase."""
+    def __init__(self, **kwargs):
+        super().__init__()
+        do_not_connect = kwargs.pop('do_not_connect', False)
+        self.con_func = partial(vertica_python.connect, **kwargs)
+        if not do_not_connect:
+            self.con = self.con_func()

@@ -52,17 +52,16 @@ async def request_parser_middleware(app, handler):
         else:
             request['body'] = ''
         return await handler(request)
-
     return _middleware_handler
 
-def response_encoder(handler):
+async def response_encoder_middleware(app, handler):
     json_header = {'Content-Type': 'application/json'}
-    async def _handler(request):
+    async def _middleware_handler(request):
         resp = await handler(request)
-        if isinstance(resp, (dict, list)):
-            return web.Response(text=_ENCODER.encode(resp), headers=json_header)
-        elif isinstance(resp, web.Response):
+        if isinstance(resp, web.Response):
             return resp
-        else:
+        try:
+            return web.Response(text=_ENCODER.encode(resp), headers=json_header)
+        except TypeError:
             raise ValueError('Unacceptable response!')
-    return _handler
+    return _middleware_handler

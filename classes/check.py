@@ -11,6 +11,17 @@ _BASE16 = 2**32
 class Check(BaseDict):
     collection = 'checks'
 
+    async def save(self):
+        self['latest'] = True
+        await super().save()
+        await self.col.update({
+            'system': self['system'],
+            'operation': self['operation'],
+            'name': self['name'],
+            'extension': self['extension'],
+            'key': self['key'],
+        }, {'$set': {'latest': False}})
+
     @property
     def filename(self):
         try:
