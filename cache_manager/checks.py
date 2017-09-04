@@ -29,7 +29,6 @@ class GitBlobWrapper(object):
             path, el = os.path.split(path)
             check_op.append(el)
         self.check, self.operation = check_op
-        self.check, _ext = self.check.strip('.').lower()
         _, self.system = os.path.split(blob.repo.working_tree_dir)
 
     def __repr__(self):
