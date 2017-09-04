@@ -19,6 +19,7 @@ class GitBlobWrapper(object):
         check_op = []
         for _ in range(2):
             path, el = os.path.split(blob.abspath)
+            print(path)
             check_op.append(el.strip('"'))
 
         self.filename, self.operation = check_op
