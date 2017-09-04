@@ -158,7 +158,7 @@ class _DBConnection(object):
         db_res = []
 
         async with self.async_cursor() as curs:
-            await self.async_run_query(curs, query, input_data)
+            await self._async_run_query(curs, query, input_data)
 
             if get_field_names:
                 db_res.append(tuple(col[0] for col in curs.description))
