@@ -19,7 +19,8 @@ class GitBlobWrapper(object):
         self.hash = blob.hexsha
 
         dirname, self.filename = os.path.split(blob.abspath)
-        print(dirname, self.filename)
+        print(dirname)
+        print(self.filename)
         self.filename = self.filename.strip('"')
         print(self.filename)
         self.full_path = os.path.join(dirname, self.filename)
