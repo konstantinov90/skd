@@ -61,7 +61,6 @@ async def response_encoder_middleware(app, handler):
         if isinstance(resp, web.Response):
             return resp
         try:
-            print(resp)
             return web.Response(text=_ENCODER.encode(resp), headers=json_header)
         except TypeError as exc:
             raise
