@@ -17,6 +17,7 @@ class CheckExtError(Exception):
 class GitBlobWrapper(object):
     def __init__(self, blob):
         _abspath = blob.abspath.strip('"')
+        print(_abspath)
         self.full_path, self.hash = _abspath, blob.hexsha
         path = _abspath
         path, _ext = os.path.splitext(path)
