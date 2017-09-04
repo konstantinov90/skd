@@ -94,7 +94,7 @@ async def get_last_checks(query):
         checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
     except KeyError:
         checks_tmpls_query = {'system': query['system']}
-    check_tmpls_map
+    check_tmpls_map = {}
     async for check_tmpl in db.cache.find(checks_tmpls_query):
         current_key = _KEY(check_tmpl)
         check_tmpls_map[current_key] = check_tmpl
