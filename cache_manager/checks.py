@@ -16,11 +16,11 @@ class CheckExtError(Exception):
 
 class GitBlobWrapper(object):
     def __init__(self, blob):
-        self.hash =blob.hexsha
+        self.hash = blob.hexsha
 
         dirname, self.filename = os.path.split(blob.abspath)
         self.filename = self.filename.strip('"')
-        blob.abspath = os.path.join(dirname, self.filename)
+        self.full_path = os.path.join(dirname, self.filename)
 
         path, _ext = os.path.splitext(blob.abspath)
         self.ext = _ext.strip('.').lower()
