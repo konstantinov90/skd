@@ -76,8 +76,8 @@ class Cache(object):
                 continue
             diff = await aio.async_run(repo.tree(curr_commit[repo_name]).diff, repo.tree(repo.commit().hexsha))
             for file in diff:
-                blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob.strip('"') else None
-                blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob.strip('"') else None
+                blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
+                blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None
                 try:
                     check = (await blob_to.make_check()) if blob_to else None
                 except checks.CheckExtError:
