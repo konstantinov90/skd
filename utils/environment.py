@@ -10,9 +10,9 @@ import os
 import aiofiles
 import xlsxwriter
 
-from . import DB, aio
-from .aiofiles_adapter import Adapter
-from .zip_join import zip_join
+from utls import DB, aio
+from utils.aiofiles_adapter import Adapter
+from utils.zip_join import zip_join
 
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
