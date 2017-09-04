@@ -3,7 +3,6 @@ import hashlib
 from operator import itemgetter
 import os
 import os.path
-import re
 import urllib.parse
 
 import aiofiles
@@ -17,6 +16,7 @@ from multidict import MultiDict
 
 import skd
 import cache_manager
+from classes.ttl_dict import TTLDict
 import settings
 from utils.aio import aio
 import utils.authorization as auth
@@ -63,76 +63,84 @@ async def create_user(request):
 async def receive_task(request):
     return await skd.register_task(request['body'])
 
-mem_cache = {}
-
-_REGEXPR = re.compile('^(?!_).*')
 _KEY = itemgetter(*'system operation name extension'.split())
 
-async def _get_last_checks(query):
-    checks = {}
-    key = itemgetter(*'system operation name extension'.split())
-    print(query)
-    async for task in db.tasks.find(query).sort([('started', -1)]):
-        task_id = task['_id']
-        async for check in db.checks.find({'task_id': task_id}).sort([('name', 1), ('extension', 1)]):
-            current_key = _KEY(check)
-            if current_key in checks:
-                continue
-            checks[current_key] = check
-    check_tmpls = await db.cache.find({
-        'system': query['system'],
-        'operation': _REGEXPR,
-    }, {'content': 0}).sort([('operation', 1), ('name', 1), ('extension', 1)]).to_list(None)
-    for check_tmpl in check_tmpls:
-        check = checks.get(_KEY(check_tmpl))
-        if check:
-            check_tmpl['check'] = check
-    return check_tmpls
+# async def _get_last_checks(query):
+#     checks = {}
+#     print(query)
+#     async for task in db.tasks.find(query).sort([('started', -1)]):
+#         task_id = task['_id']
+#         async for check in db.checks.find({'task_id': task_id}).sort([('name', 1), ('extension', 1)]):
+#             current_key = _KEY(check)
+#             if current_key in checks:
+#                 continue
+#             checks[current_key] = check
+#     check_tmpls = await db.cache.find({
+#         'system': query['system'],
+#         # 'operation': _REGEXPR,
+#     }, {'content': 0}).sort([('operation', 1), ('name', 1), ('extension', 1)]).to_list(None)
+#     for check_tmpl in check_tmpls:
+#         check = checks.get(_KEY(check_tmpl))
+#         if check:
+#             check_tmpl['check'] = check
+#     return check_tmpls
 
-async def get_last_checks(query):
-    try:
-        checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
-    except KeyError:
-        checks_tmpls_query = {'system': query['system']}
-    check_tmpls_map = {}
-    async for check_tmpl in db.cache.find(checks_tmpls_query):
-        current_key = _KEY(check_tmpl)
-        check_tmpls_map[current_key] = check_tmpl
+def hash_obj(obj):
+    dummy = json_util.dumps(obj).encode('utf-8')
+    return hashlib.sha1(dummy).hexdigest()
 
-    query['latest'] = True
-    async for check in db.checks.find(query):
-        current_key = _KEY(check)
-        check_tmpls_map[current_key].update(check=check)
-    return list(check_tmpls_map.values())
+async def get_last_checks():
+    while True:
+        for k, v in list(mem_cache.items()):
+            query = v['query']
+            print('getting check {}'.format(query))
+            try:
+                checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
+            except KeyError:
+                checks_tmpls_query = {'system': query['system']}
+            check_tmpls_map = {}
+            async for check_tmpl in db.cache.find(checks_tmpls_query, {'content': 0}).sort((('name', 1),)):
+                current_key = _KEY(check_tmpl)
+                check_tmpls_map[current_key] = check_tmpl
+
+            query['latest'] = True
+            async for check in db.checks.find(query):
+                current_key = _KEY(check)
+                check_tmpls_map[current_key].update(check=check)
+            response_data = list(check_tmpls_map.values())
+            mem_cache[k].update(response=response_data, hash=hash_obj(response_data))
+            print(mem_cache[k])
+        await aio.sleep(2)
 
 
 @auth.system_required('view')
 async def cached_get_last_checks(request):
 
-    def hash_obj(obj):
-        dummy = json_util.dumps(obj).encode('utf-8')
-        return hashlib.sha1(dummy).digest()
-
     query = request['body']['query']
-    force_reload = request['body'].get('force_reload')
+    response_hash = request['body'].get('response_hash')
     key = hash_obj(query)
     # print(request['key'])
+    mem_cache.setdefault(key, {'query': query, 'hash': None})
 
-    check_tmpls = None
+    while response_hash == mem_cache[key]['hash'] and 'response' not in mem_cache[key]:
+        mem_cache.refresh_item(key)
+        await aio.sleep(2)
 
-    check_tmpls = await get_last_checks(query)
-    if force_reload:
-        print(request.headers)
-        mem_cache[key] = check_tmpls
-        return check_tmpls
+    return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
 
-    while check_tmpls == mem_cache[key]:
-        check_tmpls = await get_last_checks(query)
-        await aio.sleep(1)
-        print('tick', query)
-
-    mem_cache[key] = check_tmpls
-    return check_tmpls
+    # check_tmpls = await get_last_checks(query)
+    # if force_reload:
+    #     print(request.headers)
+    #     mem_cache[key] = check_tmpls
+    #     return check_tmpls
+    #
+    # while check_tmpls == mem_cache[key]:
+    #     check_tmpls = await get_last_checks(query)
+    #     await aio.sleep(1)
+    #     print('tick', query)
+    #
+    # mem_cache[key] = check_tmpls
+    # return check_tmpls
 
 
 def getter(collection):
@@ -201,7 +209,10 @@ async def get_file(request):
 async def on_shutdown(app):
     print('server shutting down')
     cache_manager.stop()
+    mem_cache.stop()
     await app['refresher']
+
+mem_cache = TTLDict()
 
 def init(loop):
     middlewares = [
@@ -233,6 +244,8 @@ def init(loop):
     app.router.add_post('/create_user', create_user)
 
     app['refresher'] = aio.ensure_future(cache_manager.refresher())
+    # app['mem_cache'] = aio.ensure_future(mem_cache.activate())
+    aio.ensure_future(get_last_checks())
 
     app.on_shutdown.append(on_shutdown)
     return app
