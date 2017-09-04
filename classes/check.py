@@ -13,12 +13,13 @@ class Check(BaseDict):
 
     async def save(self):
         self['latest'] = True
-        await self.col.update_many({
+        await self.col.update_one({
             'system': self['system'],
             'operation': self['operation'],
             'name': self['name'],
             'extension': self['extension'],
             'key': self['key'],
+            'latest': True,
         }, {'$set': {'latest': False}})
         await super().save()
 
