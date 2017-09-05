@@ -19,11 +19,13 @@ import cache_manager
 from classes.ttl_dict import TTLDict
 import settings
 from utils.aio import aio
+from utils import app_log
 import utils.authorization as auth
 from utils.db_client import db
 from utils import json_util
 from utils import app_log
 
+LOG = app_log.get_logger(__name__)
 
 async def index(request):
     return 'SKD rest api'
@@ -93,7 +95,7 @@ async def get_last_checks():
     while True:
         for k, v in list(mem_cache.items()):
             query = v['query']
-            print('{} getting check {}'.format(k, query))
+            LOG.debug('{} getting check {}', k, query)
             try:
                 checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
             except KeyError:
@@ -109,7 +111,7 @@ async def get_last_checks():
                 check_tmpls_map[current_key].update(check=check)
             response_data = list(check_tmpls_map.values())
             mem_cache[k].update(response=response_data, hash=hash_obj(response_data))
-        await aio.sleep(2)
+        # await aio.sleep(2)
 
 
 @auth.system_required('view')
@@ -124,9 +126,8 @@ async def cached_get_last_checks(request):
     while response_hash == mem_cache[key]['hash']:
         mem_cache.refresh_item(key)
         mem_cache.seek_and_destroy()
-        await aio.sleep(2)
+        # await aio.sleep(2)
 
-    print(mem_cache[key]['hash'], response_hash, mem_cache[key]['hash'] == response_hash)
     return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
 
     # check_tmpls = await get_last_checks(query)

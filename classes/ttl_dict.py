@@ -5,10 +5,6 @@ from utils.aio import aio
 TEN_SECONDS = timedelta(seconds=10)
 
 class TTLDict(collections.UserDict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.running = True
-
     def __setitem__(self, _key, _value):
         value = {'value': _value, 'expires': datetime.now() + TEN_SECONDS}
         super().__setitem__(_key, value)
@@ -18,20 +14,9 @@ class TTLDict(collections.UserDict):
 
     def refresh_item(self, key):
         if key in self:
-            print('REFRESHING KEY ' + key)
             self.data[key]['expires'] = datetime.now() + TEN_SECONDS
 
     def seek_and_destroy(self):
         for k, v in list(self.data.items()):
             if datetime.now() > v['expires']:
-                print("DELETING KEY " + k)
                 del self[k]
-
-    async def activate(self):
-        while self.running:
-            sleep_task = aio.ensure_future(aio.sleep(2))
-            self.seek_and_destroy()
-            await sleep_task
-
-    def stop(self):
-        self.running = False
