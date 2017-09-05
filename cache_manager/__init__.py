@@ -9,6 +9,7 @@ from utils import aio
 from utils import app_log
 from utils.db_client import db
 from . import checks
+from . import kerberos_auth
 
 LOG = app_log.get_logger(__name__)
 
@@ -43,6 +44,9 @@ class Cache(object):
         aio.run(db.commit.remove)
         if not os.path.isdir(repos_dir):
             os.mkdir(repos_dir)
+
+        kerberos_auth.kinit()
+
         for repo_name, url in S.REPOS.items():
             repo_path = os.path.join(repos_dir, repo_name)
             try:

@@ -68,7 +68,7 @@ class Check(object):
 
     async def _init(self):
         async def read_file(filename, encoding='utf-8'):
-            async with aiofiles.open(self.blob.full_path, 'r', encoding=encoding) as fd:
+            async with aiofiles.open(filename, 'r', encoding=encoding) as fd:
                 return await fd.read()
         try:
             self.content = await read_file(self.blob.full_path)
