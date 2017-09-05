@@ -23,6 +23,7 @@ class TTLDict(collections.UserDict):
     def seek_and_destroy(self):
         for k, v in list(self.data.items()):
             if datetime.now() > v['expires']:
+                print("DELETING KEY " + k)
                 del self[k]
 
     async def activate(self):
