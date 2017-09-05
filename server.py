@@ -93,7 +93,7 @@ async def get_last_checks():
     while True:
         for k, v in list(mem_cache.items()):
             query = v['query']
-            print('getting check {}'.format(query))
+            print('{} getting check {}'.format(k, query))
             try:
                 checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
             except KeyError:
