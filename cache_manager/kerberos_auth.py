@@ -8,7 +8,7 @@ from utils.aio import aio
 
 LOG = app_log.get_logger(__name__)
 
-FIVE_HOURS = datetime.timedelta(seconds=5).seconds
+FIVE_HOURS = datetime.timedelta(hours=5).seconds
 
 if 'linux' in platform.system().lower():
     username, pwd = settings.KERBEROS_AUTH
