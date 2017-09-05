@@ -51,6 +51,7 @@ class Cache(object):
             repo_path = os.path.join(repos_dir, repo_name)
             try:
                 repo = git.Repo(repo_path)
+                repo.config_writer().set_value('core', 'quotepath', 'false')
                 repo.remotes.origin.pull('master')
             except git.exc.NoSuchPathError:
                 repo = git.Repo.clone_from(url, repo_path)
