@@ -18,7 +18,8 @@ if 'linux' in platform.system().lower():
         if err:
             raise Exception(err)
         LOG.info(out)
-        aio.call_at(aio.get_event_loop().time() + FIVE_HOURS, kinit)
+        loop = aio.get_event_loop()
+        loop.call_at(loop.time() + FIVE_HOURS, kinit)
 else:
     def kinit():
         pass
