@@ -19,7 +19,7 @@ class TTLDict(collections.UserDict):
     def refresh_item(self, key):
         if key in self:
             print('REFRESHING KEY ' + key)
-            self[key]['expires'] = datetime.now() + TEN_SECONDS
+            self.data[key]['expires'] = datetime.now() + TEN_SECONDS
 
     def seek_and_destroy(self):
         for k, v in list(self.data.items()):
