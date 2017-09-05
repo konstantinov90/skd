@@ -20,17 +20,12 @@ class GitBlobWrapper(object):
         path = blob.abspath
         for _ in range(2):
             path, el = os.path.split(path)
-            print(path)
             check_op.append(el.strip('"'))
 
         self.filename, self.operation = check_op
-        LOG.error(self.filename)
-        LOG.warning(self.operation)
         self.check, self.ext = os.path.splitext(self.filename)
         self.ext = self.ext.strip('.').lower()
-        LOG.error('{}{}{}',self.check, '->>', self.ext)
         self.full_path = os.path.join(path, self.operation) + '/' + self.filename
-        LOG.warning(self.full_path)
 
         self.hash = blob.hexsha
         _, self.system = os.path.split(blob.repo.working_tree_dir)
