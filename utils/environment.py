@@ -13,7 +13,9 @@ import xlsxwriter
 from utils import DB, aio
 from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
+from utils import app_log
 
+LOG = app_log.get_logger(__name__)
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
 def single_connection(check, task):
@@ -94,9 +96,9 @@ def environment(target):
 
             if isinstance(result, abc.Sequence) and not isinstance(result, str):
                 # deconstruct complex result
-                if isinstance(result[0], bool) or result[0] is None:
+                if result and isinstance(result[0], bool) or result[0] is None:
                     logical_result, result = result
-                elif isinstance(result[-1], bool) or result[-1] is None:
+                elif result and isinstance(result[-1], bool) or result[-1] is None:
                     result, logical_result = result
                 else:
                     logical_result = None
@@ -126,6 +128,7 @@ def environment(target):
                 logical_result = result
         except Exception as exc:
             traceback.print_exc()
+            LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], exc)
             print(check.data)
             logical_result = 'runtime error: {}'.format(exc)
 

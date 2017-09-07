@@ -61,7 +61,7 @@ async def create_user(request):
     else:
         return 'user {} created'
 
-@auth.system_required('register_check')
+# @auth.system_required('register_check')
 async def receive_task(request):
     return await skd.register_task(request['body'])
 
@@ -114,7 +114,7 @@ async def get_last_checks():
         await aio.sleep(0.5)
 
 
-@auth.system_required('view')
+# @auth.system_required('view')
 async def cached_get_last_checks(request):
 
     query = request['body']['query']
@@ -238,7 +238,7 @@ def init(loop):
     cors.add(app.router.add_post('/rest/send_task', receive_task))
     for dimension in 'cache tasks checks'.split():
         cors.add(app.router.add_post('/rest/' + dimension, getter(dimension)))
-    app.router.add_post('/rest/get_last_checks', cached_get_last_checks)
+    cors.add(app.router.add_post('/rest/get_last_checks', cached_get_last_checks))
     app.router.add_get('/files', get_file)
     app.router.add_post('/archive', get_archive)
 
