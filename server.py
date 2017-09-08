@@ -133,21 +133,7 @@ async def cached_get_last_checks(request):
         mem_cache.refresh_item(key)
         await aio.sleep(0.1)
 
-    return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
-
-    # check_tmpls = await get_last_checks(query)
-    # if force_reload:
-    #     print(request.headers)
-    #     mem_cache[key] = check_tmpls
-    #     return check_tmpls
-    #
-    # while check_tmpls == mem_cache[key]:
-    #     check_tmpls = await get_last_checks(query)
-    #     await aio.sleep(1)
-    #     print('tick', query)
-    #
-    # mem_cache[key] = check_tmpls
-    # return check_tmpls
+    return { 'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash'] }
 
 
 def getter(collection):
