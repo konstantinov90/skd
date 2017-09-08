@@ -216,7 +216,6 @@ async def get_file(request):
 async def on_shutdown(app):
     print('server shutting down')
     cache_manager.stop()
-    mem_cache.stop()
     await app['refresher']
 
 mem_cache = TTLDict()
