@@ -19,12 +19,9 @@ import skd
 import cache_manager
 from classes.ttl_dict import TTLDict
 import settings
+from utils import app_log, authorization as auth, json_util
 from utils.aio import aio
-from utils import app_log
-import utils.authorization as auth
 from utils.db_client import db
-from utils import json_util
-from utils import app_log
 
 LOG = app_log.get_logger(__name__)
 
