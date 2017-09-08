@@ -49,8 +49,8 @@ async def request_parser_middleware(app, handler):
                 request['body'] = to_object_id(await request.json())
             except json.JSONDecodeError as exc:
                 return web.HTTPBadRequest(text=str(exc))
-        else:
-            request['body'] = ''
+        elif request.method == 'GET':
+            request['body'] = request.query
         return await handler(request)
     return _middleware_handler
 
