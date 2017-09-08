@@ -16,7 +16,7 @@ class Restarter(PatternMatchingEventHandler):
         if self.pyt:
             self.pyt.terminate()
             logging.info("Python terminated")
-        self.pyt = Popen(['python', 'run_server.py'])
+        self.pyt = Popen(['python3', 'run_server.py'])
 
 
 if __name__ == "__main__":
