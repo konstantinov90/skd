@@ -133,7 +133,7 @@ async def cached_get_last_checks(request):
         mem_cache.refresh_item(key)
         await aio.sleep(0.1)
 
-    return { 'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash'] }
+    return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
 
 
 def getter(collection):
