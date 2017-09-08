@@ -173,7 +173,10 @@ def getter(collection):
     return route
 
 async def get_archive(request):
-    task_id = request['body']['task_id']
+    if request['body']:
+        task_id = request['body']['task_id']
+    else:
+        task_id = bson.ObjectId(request.query['task_id'])
     msg = ''
     async for check in db.checks.find({'task_id': task_id}):
         if 'finished' not in check or 'result_filename' not in check:
