@@ -227,7 +227,7 @@ def init(loop):
 
     app.middlewares.append(json_util.response_encoder_middleware)
 
-    app.router.add_get('/', index)
+    cors.add(app.router.add_get('/', index))
     cors.add(app.router.add_post('/rest/send_task', receive_task))
     for dimension in 'cache tasks checks'.split():
         cors.add(app.router.add_post('/rest/' + dimension, getter(dimension)))
