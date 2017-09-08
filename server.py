@@ -125,7 +125,7 @@ async def cached_get_last_checks(request):
     mem_cache.setdefault(key, {'query': query, 'hash': response_hash})
 
     while response_hash == mem_cache[key]['hash']:
-        print(dir(request))
+        print(request)
         mem_cache.refresh_item(key)
         mem_cache.seek_and_destroy()
         await aio.sleep(0.5)
