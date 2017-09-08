@@ -89,27 +89,50 @@ def hash_obj(obj):
     dummy = json_util.dumps(obj).encode('utf-8')
     return hashlib.sha1(dummy).hexdigest()
 
+async def get_last_checks_portion(key, query):
+    LOG.debug('{} getting check {}', key, query)
+
+    checks_tmpls_query = {'system': query['system']}
+    sort_by = (('name', 1), ('extension', 1))
+    if 'operation' in query:
+        checks_tmpls_query.update(operation=query['operation'])
+
+    check_tmpls_map = {}
+    async for check_tmpl in db.cache.find(checks_tmpls_query, {'content': 0}).sort(sort_by):
+        current_key = _KEY(check_tmpl)
+        check_tmpls_map[current_key] = check_tmpl
+
+    query['latest'] = True
+    async for check in db.checks.find(query):
+        current_key = _KEY(check)
+        check_tmpls_map[current_key].update(check=check)
+    response_data = list(check_tmpls_map.values())
+    mem_cache[key].update(response=response_data, hash=hash_obj(response_data))
+
+
 async def get_last_checks():
     while True:
+        tasks = []
         for k, v in list(mem_cache.items()):
-            query = v['query']
-            LOG.debug('{} getting check {}', k, query)
-            try:
-                checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
-            except KeyError:
-                checks_tmpls_query = {'system': query['system']}
-            check_tmpls_map = {}
-            async for check_tmpl in db.cache.find(checks_tmpls_query, {'content': 0}).sort((('name', 1),)):
-                current_key = _KEY(check_tmpl)
-                check_tmpls_map[current_key] = check_tmpl
-
-            query['latest'] = True
-            async for check in db.checks.find(query):
-                current_key = _KEY(check)
-                check_tmpls_map[current_key].update(check=check)
-            response_data = list(check_tmpls_map.values())
-            mem_cache[k].update(response=response_data, hash=hash_obj(response_data))
-        await aio.sleep(0.5)
+            tasks.append(aio.ensure_future(get_last_checks_portion(k, v['query'])))
+            # LOG.debug('{} getting check {}', k, query)
+            # try:
+            #     checks_tmpls_query = {'system': query['system'], 'operation': query['operation']}
+            # except KeyError:
+            #     checks_tmpls_query = {'system': query['system']}
+            # check_tmpls_map = {}
+            # async for check_tmpl in db.cache.find(checks_tmpls_query, {'content': 0}).sort((('name', 1),)):
+            #     current_key = _KEY(check_tmpl)
+            #     check_tmpls_map[current_key] = check_tmpl
+            #
+            # query['latest'] = True
+            # async for check in db.checks.find(query):
+            #     current_key = _KEY(check)
+            #     check_tmpls_map[current_key].update(check=check)
+            # response_data = list(check_tmpls_map.values())
+            # mem_cache[k].update(response=response_data, hash=hash_obj(response_data))
+        await aio.gather(aio.sleep(0.5), aio.wait(tasks))
+        mem_cache.seek_and_destroy()
 
 
 # @auth.system_required('view')
@@ -124,7 +147,6 @@ async def cached_get_last_checks(request):
     while response_hash == mem_cache[key]['hash']:
         print(request.host)
         mem_cache.refresh_item(key)
-        mem_cache.seek_and_destroy()
         await aio.sleep(0.5)
 
     return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
