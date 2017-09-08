@@ -112,7 +112,7 @@ async def get_last_checks_portion(key, query):
 
 async def get_last_checks():
     while True:
-        tasks = []
+        tasks = [aio.sleep(0.5)]
         for k, v in list(mem_cache.items()):
             tasks.append(aio.ensure_future(get_last_checks_portion(k, v['query'])))
             # LOG.debug('{} getting check {}', k, query)
@@ -131,7 +131,7 @@ async def get_last_checks():
             #     check_tmpls_map[current_key].update(check=check)
             # response_data = list(check_tmpls_map.values())
             # mem_cache[k].update(response=response_data, hash=hash_obj(response_data))
-        await aio.gather(aio.sleep(0.5), aio.wait(tasks))
+        await aio.wait(tasks)
         mem_cache.seek_and_destroy()
 
 
