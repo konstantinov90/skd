@@ -4,6 +4,7 @@ import hashlib
 from operator import itemgetter
 import os
 import os.path
+import tracemalloc
 import urllib.parse
 
 import aiofiles
@@ -24,6 +25,9 @@ from utils.aio import aio
 from utils.db_client import db
 
 LOG = app_log.get_logger(__name__)
+MEM_LOG = app_log.get_logger(__name__, r'logs/memory.log')
+
+tracemalloc.start()
 
 async def index(request):
     return 'SKD rest api'
@@ -202,6 +206,15 @@ async def get_file(request):
         resp.write(await fd.read())
     return resp
 
+async def memory_log():
+    while True:
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        MEM_LOG.info('='*40)
+        for stat in top_stats[:20]:
+            MEM_LOG.info('{}', stat)
+        await aio.sleep(10)
+
 async def on_shutdown(app):
     print('server shutting down')
     cache_manager.stop()
@@ -242,7 +255,7 @@ def init(loop):
     app['refresher'] = aio.ensure_future(cache_manager.refresher())
     # app['mem_cache'] = aio.ensure_future(mem_cache.activate())
     aio.ensure_future(get_last_checks())
-
+    aio.ensure_future(memory_log())
     app.on_shutdown.append(on_shutdown)
     return app
 
