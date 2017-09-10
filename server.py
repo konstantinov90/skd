@@ -25,7 +25,7 @@ from utils.aio import aio
 from utils.db_client import db
 
 LOG = app_log.get_logger(__name__)
-MEM_LOG = app_log.get_logger(__name__, r'logs/memory.log')
+MEM_LOG = app_log.get_logger('mem_log', r'logs/memory.log')
 
 tracemalloc.start()
 
