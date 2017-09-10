@@ -83,14 +83,14 @@ def get_logger(logger_name, log_filename=S.LOG_NAME):
     logger.setLevel(dummy.level)
     return StyleAdapter(logger)
 
+ACCESS_LOG = get_logger('access_log', r'logs/access.log')
 
 async def access_log_middleware(app, handler):
-    access_log = get_logger('access_log', r'logs/access.log')
-
     async def _middleware_handler(request):
         username = await auth.auth.get_auth(request)
-        access_log.info('{}: {}', username, request)
-        access_log.debug('{!r}', request['body'])
+        
+        ACCESS_LOG.info('{}: {}', username, request)
+        ACCESS_LOG.debug('{!r}', request.get('body'))
 
         response = await handler(request)
 
@@ -98,8 +98,8 @@ async def access_log_middleware(app, handler):
             resp = response.text
         except AttributeError:
             resp = type(response)
-        access_log.debug('{}: {} response: {}', username, request, resp)
-        access_log.debug('{}', response.headers)
+        ACCESS_LOG.debug('{}: {} response: {}', username, request, resp)
+        ACCESS_LOG.debug('{}', response.headers)
         return response
 
     return _middleware_handler
