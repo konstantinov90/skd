@@ -99,6 +99,7 @@ class Cache(object):
                     raise ValueError('unexpected change_type for file {}', blob_from.full_path)
                 curr_commit[repo_name] = repo.commit().hexsha
         await db.commit.update({}, curr_commit)
+        LOG.info('git tick')
 
     async def refresher(self):
         timeout_error_wait = 1
@@ -119,7 +120,6 @@ class Cache(object):
             if not self.refreshing:
                 await self.future
                 break
-            LOG.info('git tick')
 
     def stop(self):
         self.refreshing = False
