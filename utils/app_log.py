@@ -77,6 +77,7 @@ class Dummy(object):
 
 
 def get_logger(logger_name, log_filename=S.LOG_NAME):
+    print('get_logger', log_filename)
     logger = logging.getLogger(logger_name)
     dummy = Dummy.get_dummy(log_filename)
     logger.addHandler(dummy.queue_handler)
@@ -88,7 +89,7 @@ ACCESS_LOG = get_logger('access_log', r'logs/access.log')
 async def access_log_middleware(app, handler):
     async def _middleware_handler(request):
         username = await auth.auth.get_auth(request)
-        
+
         ACCESS_LOG.info('{}: {}', username, request)
         ACCESS_LOG.debug('{!r}', request.get('body'))
 
