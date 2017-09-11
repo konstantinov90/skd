@@ -77,7 +77,6 @@ class Dummy(object):
 
 
 def get_logger(logger_name, log_filename=S.LOG_NAME):
-    print('get_logger', log_filename)
     logger = logging.getLogger(logger_name)
     dummy = Dummy.get_dummy(log_filename)
     logger.addHandler(dummy.queue_handler)

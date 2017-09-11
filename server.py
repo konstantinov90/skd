@@ -205,13 +205,31 @@ async def get_file(request):
         resp.write(await fd.read())
     return resp
 
+from logging import LogRecord
+import sys
+import gc
+
 async def memory_log():
     while True:
         snapshot = tracemalloc.take_snapshot()
         top_stats = snapshot.statistics('lineno')
         MEM_LOG.info('='*40)
-        for stat in top_stats[:20]:
-            MEM_LOG.info('{}', stat)
+        lr = []
+        for obj in gc.get_objects():
+            if isinstance(obj, LogRecord):
+                lr.append(obj)
+        MEM_LOG.info('log records {}', len(lr))
+        # for refs in gc.get_referrers(lr[-1]):
+        #     if isinstance(refs, list):
+        #         for ref in refs:
+        #             print(ref, '-----> refererrs')
+        #     else:
+        #         print(refs, '-----> refererrs')
+        MEM_LOG.info('='*40)
+        MEM_LOG.info('MEM_LOG queue size {}', MEM_LOG.logger.handlers[0].queue.qsize())
+        MEM_LOG.info('='*40)
+        # for stat in top_stats[:20]:
+        #     MEM_LOG.info('{}', stat)
         await aio.sleep(10)
 
 async def on_shutdown(app):
