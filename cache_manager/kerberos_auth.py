@@ -6,7 +6,7 @@ import settings
 from utils import app_log
 from utils.aio import aio
 
-LOG = app_log.get_logger(__name__)
+LOG = app_log.get_logger()
 
 FIVE_HOURS = datetime.timedelta(hours=5).seconds
 

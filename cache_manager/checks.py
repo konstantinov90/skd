@@ -8,7 +8,7 @@ import aiofiles
 from utils import app_log
 from utils.environment import *
 
-LOG = app_log.get_logger(__name__)
+LOG = app_log.get_logger()
 
 class CheckExtError(Exception):
     pass

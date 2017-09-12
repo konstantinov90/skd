@@ -54,14 +54,14 @@ async def request_parser_middleware(app, handler):
         return await handler(request)
     return _middleware_handler
 
+JSON_HEADER = {'Content-Type': 'application/json'}
 async def response_encoder_middleware(app, handler):
-    json_header = {'Content-Type': 'application/json'}
     async def _middleware_handler(request):
         resp = await handler(request)
-        if isinstance(resp, web.Response):
+        if isinstance(resp, (web.Response, web.StreamResponse)):
             return resp
         try:
-            return web.Response(text=_ENCODER.encode(resp), headers=json_header)
+            return web.Response(text=_ENCODER.encode(resp), headers=JSON_HEADER)
         except TypeError as exc:
             raise
             raise ValueError('Unacceptable response!')

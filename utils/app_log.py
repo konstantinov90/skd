@@ -39,7 +39,7 @@ class MSecFormatter(logging.Formatter):
 
 class Dummy(object):
     level = logging.DEBUG if S.DEBUG else logging.INFO
-    instances = {}
+    # instances = {}
     def __init__(self, log_filename):
         _log_queue = queue.Queue()
         self.queue_handler = logging.handlers.QueueHandler(_log_queue)
@@ -66,22 +66,25 @@ class Dummy(object):
         _formatter = MSecFormatter(_format, datefmt='%H:%M:%S', style='{')
         # _log_handler.setFormatter(_formatter)
         _file_handler.setFormatter(_formatter)
-        self.instances[log_filename] = self
+        # self.instances[log_filename] = self
 
-    def __del__(self):
-        self._queue_listener.stop()
+    # def __del__(self):
+    #     self._queue_listener.stop()
 
-    @classmethod
-    def get_dummy(cls, log_filename):
-        return cls.instances.get(log_filename, cls(log_filename))
+    # @classmethod
+    # def get_dummy(cls, log_filename):
+    #     return cls.instances.get(log_filename, cls(log_filename))
 
+_LOGGERS = {}
 
-def get_logger(logger_name, log_filename=S.LOG_NAME):
-    logger = logging.getLogger(logger_name)
-    dummy = Dummy.get_dummy(log_filename)
-    logger.addHandler(dummy.queue_handler)
-    logger.setLevel(dummy.level)
-    return StyleAdapter(logger)
+def get_logger(logger_name='app', log_filename=S.LOG_NAME):
+    if logger_name not in _LOGGERS:
+        logger = logging.getLogger(logger_name)
+        dummy = Dummy(log_filename)
+        logger.addHandler(dummy.queue_handler)
+        logger.setLevel(dummy.level)
+        _LOGGERS[logger_name] = StyleAdapter(logger)
+    return _LOGGERS[logger_name]
 
 ACCESS_LOG = get_logger('access_log', r'logs/access.log')
 

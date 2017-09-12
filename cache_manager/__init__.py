@@ -11,7 +11,7 @@ from utils.db_client import db
 from . import checks
 from . import kerberos_auth
 
-LOG = app_log.get_logger(__name__)
+LOG = app_log.get_logger()
 
 col = db.cache
 # db.commit.remove()

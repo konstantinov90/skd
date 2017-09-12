@@ -24,7 +24,7 @@ from utils import app_log, authorization as auth, json_util
 from utils.aio import aio
 from utils.db_client import db
 
-LOG = app_log.get_logger(__name__)
+LOG = app_log.get_logger()
 MEM_LOG = app_log.get_logger('mem_log', r'logs/memory.log')
 
 tracemalloc.start()
@@ -183,8 +183,8 @@ async def get_archive(request):
 
 
 async def get_file(request):
-    query = request.query
-    _, filename = os.path.split(query['f'])
+    print('getting file')
+    filename = request.match_info.get('filename')
     cnt_dsp = 'attachment; filename="{}"'.format(filename)
     ext = os.path.splitext(filename)[-1]
     if ext == 'xlsx':
@@ -198,7 +198,7 @@ async def get_file(request):
         'CONTENT-DISPOSITION': cnt_dsp,
         'Content-Type': content_type
     }))
-    filepath = os.path.join(settings.CHECK_RESULT_PATH, query['f'])
+    filepath = os.path.join(settings.CHECK_RESULT_PATH, filename)
     resp.content_length = os.stat(filepath).st_size
     await resp.prepare(request)
     async with aiofiles.open(filepath, 'rb') as fd:
@@ -218,18 +218,10 @@ async def memory_log():
         for obj in gc.get_objects():
             if isinstance(obj, LogRecord):
                 lr.append(obj)
+        MEM_LOG.info('='*40)
         MEM_LOG.info('log records {}', len(lr))
-        # for refs in gc.get_referrers(lr[-1]):
-        #     if isinstance(refs, list):
-        #         for ref in refs:
-        #             print(ref, '-----> refererrs')
-        #     else:
-        #         print(refs, '-----> refererrs')
-        MEM_LOG.info('='*40)
-        MEM_LOG.info('MEM_LOG queue size {}', MEM_LOG.logger.handlers[0].queue.qsize())
-        MEM_LOG.info('='*40)
-        # for stat in top_stats[:20]:
-        #     MEM_LOG.info('{}', stat)
+        for stat in top_stats[:20]:
+            MEM_LOG.info('{}', stat)
         await aio.sleep(10)
 
 async def on_shutdown(app):
@@ -262,7 +254,7 @@ def init(loop):
     for dimension in 'cache tasks checks'.split():
         cors.add(app.router.add_post('/rest/' + dimension, getter(dimension)))
     cors.add(app.router.add_post('/rest/get_last_checks', cached_get_last_checks))
-    app.router.add_get('/files', get_file)
+    app.router.add_get('/files/{filename}', get_file)
     app.router.add_post('/archive', get_archive)
     app.router.add_get('/archive', get_archive)
 
