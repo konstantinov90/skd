@@ -66,14 +66,13 @@ class Dummy(object):
         _formatter = MSecFormatter(_format, datefmt='%H:%M:%S', style='{')
         # _log_handler.setFormatter(_formatter)
         _file_handler.setFormatter(_formatter)
-        self.instances[log_filename] = self
 
     def __del__(self):
         self._queue_listener.stop()
 
     @classmethod
     def get_dummy(cls, log_filename):
-        return cls.instances.get(log_filename, cls(log_filename))
+        return cls.instances.setdefault(log_filename, cls(log_filename))
 
 _LOGGERS = {}
 
