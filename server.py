@@ -225,7 +225,7 @@ async def memory_log():
         await aio.sleep(10)
 
 async def on_shutdown(app):
-    print('server shutting down')
+    LOG.info('server shutting down')
     cache_manager.stop()
     await app['refresher']
 
