@@ -173,7 +173,7 @@ async def get_archive(request):
     async for check in db.checks.find({'task_id': task_id}):
         if 'finished' not in check or 'result_filename' not in check:
             continue
-        filepath = os.path.join(settings.CHECK_RESULT_PATH, check['result_filename'])
+        filepath = os.path.join('files', check['result_filename'])
         enc_path = urllib.parse.quote(filepath.encode('utf-8'))
         filesize = os.stat(filepath).st_size
         _, ext = os.path.splitext(check['result_filename'])
@@ -185,6 +185,7 @@ async def get_archive(request):
 async def get_file(request):
     print('getting file')
     filename = request.match_info.get('filename')
+    enc_filename = urllib.parse.quote(filename.encode('utf-8'))
     cnt_dsp = 'attachment; filename="{}"'.format(filename)
     ext = os.path.splitext(filename)[-1]
     if ext == 'xlsx':
