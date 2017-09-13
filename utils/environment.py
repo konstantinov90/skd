@@ -15,7 +15,7 @@ from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
 from utils import app_log
 
-LOG = app_log.get_logger()
+LOG = app_log.get_logger('env', r'logs/env.log')
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
 def single_connection(check, task):
