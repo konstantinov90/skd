@@ -34,6 +34,9 @@ class GitBlobWrapper(object):
         return self.full_path
 
     async def make_check(self):
+        if not os.path.isfile(self.full_path):
+            raise CheckExtError('ignoring directory {}'.format(self.full_path))
+
         if self.ext == 'yml':
             inst = YmlCheck(self)
         elif self.ext == 'sql':
