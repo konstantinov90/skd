@@ -109,7 +109,8 @@ async def get_last_checks_portion(key, query):
     query['latest'] = True
     async for check in db.checks.find(query):
         current_key = _KEY(check)
-        check_tmpls_map[current_key].update(check=check)
+        if current_key in check_tmpls_map:
+            check_tmpls_map[current_key].update(check=check)
     response_data = list(check_tmpls_map.values())
     mem_cache[key].update(response=response_data, hash=hash_obj(response_data))
 
