@@ -173,8 +173,9 @@ async def get_archive(request):
     async for check in db.checks.find({'task_id': task_id}):
         if 'finished' not in check or 'result_filename' not in check:
             continue
-        filepath = os.path.join('files', check['result_filename'])
-        enc_path = urllib.parse.quote(filepath.encode('utf-8'))
+        filepath = os.path.join(settings.CHECK_RESULT_PATH, check['result_filename'])
+        fake_filepath = os.path.join('files', check['result_filename'])
+        enc_path = urllib.parse.quote(fake_filepath.encode('utf-8'))
         filesize = os.stat(filepath).st_size
         _, ext = os.path.splitext(check['result_filename'])
         out_filename = check['name'] + ext
