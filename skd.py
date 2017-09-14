@@ -34,8 +34,14 @@ async def run_task(task):
         '$or': task.get('checks', [{}])
     }
     async for _check in db.cache.find(query):
-        proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)])
-        running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
+        if check['extension'] == 'py':
+            running_checks.append(aio.aio.ensure_future(py(check, task)))
+        elif check['extension'] == 'sql':
+            running_checks.append(aio.aio.ensure_future(sql(check, task)))
+        elif check['extension'] == 'yml':
+            running_checks.append(aio.aio.ensure_future(yml(check, task)))
+        # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)])
+        # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
 
     await aio.aio.wait(running_checks)
     await task.finish()
