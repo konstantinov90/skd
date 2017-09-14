@@ -135,7 +135,7 @@ def environment(target):
                 logical_result = result
         except Exception as exc:
             traceback.print_exc()
-            LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], exc)
+            LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
