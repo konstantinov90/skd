@@ -124,7 +124,7 @@ def environment(target):
                     writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
                                         quoting=csv.QUOTE_MINIMAL)
                     writer.writerows(result)
-                    LOG.info('len results = ', len(result))
+                    LOG.info('len results = {}', len(result))
                     
                     async with aiofiles.open(check.filename, 'w') as fd:
                         await fd.write(adapter.lines)
