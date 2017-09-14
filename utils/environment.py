@@ -123,7 +123,7 @@ def environment(target):
                     adapter = Adapter()
                     writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
                                         quoting=csv.QUOTE_MINIMAL)
-                    writer.writerows(result)
+                    aio.proc_run(writer.writerows(result))
                     LOG.info('len results = {}', len(result))
                     
                     async with aiofiles.open(check.filename, 'w') as fd:
