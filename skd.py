@@ -2,6 +2,7 @@ import os
 import os.path
 import sys
 import pickle
+import platform
 from subprocess import Popen
 
 from classes import Task, Check
@@ -11,6 +12,7 @@ from utils.db_client import db
 from utils.environment import py, yml, sql
 
 LOG = app_log.get_logger()
+PROC_NAME = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
 
 def init(path):
     if not os.path.isdir(path):
@@ -32,15 +34,8 @@ async def run_task(task):
         '$or': task.get('checks', [{}])
     }
     async for _check in db.cache.find(query):
-        # check = Check(_check)
-        proc = Popen(['python', 'skd.py', json_util.dumps(_check), json_util.dumps(task.data)])
+        proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)])
         running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
-        # if check['extension'] == 'py':
-        #     running_checks.append(aio.aio.ensure_future(py(check, task)))
-        # elif check['extension'] == 'sql':
-        #     running_checks.append(aio.aio.ensure_future(sql(check, task)))
-        # elif check['extension'] == 'yml':
-        #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
 
     await aio.aio.wait(running_checks)
     await task.finish()
