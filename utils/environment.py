@@ -109,7 +109,7 @@ def environment(target):
 
                 await check.generate_filename('xlsx')
 
-                if len(result) > 10000:
+                if len(result) <= 10000:
                     wb = xlsxwriter.Workbook(check.filename)
                     sh = wb.add_worksheet(check['name'][:31])
                     for i, row in enumerate(result):
