@@ -76,8 +76,9 @@ class Dummy(object):
 
 _LOGGERS = {}
 
-def get_logger(logger_name='app', log_filename=S.LOG_NAME):
+def get_logger(logger_name='app'):
     if logger_name not in _LOGGERS:
+        log_filename = os.path.join(S.LOG_PATH, logger_name) + '.log'
         logger = logging.getLogger(logger_name)
         dummy = Dummy.get_dummy(log_filename)
         logger.addHandler(dummy.queue_handler)
@@ -85,7 +86,7 @@ def get_logger(logger_name='app', log_filename=S.LOG_NAME):
         _LOGGERS[logger_name] = StyleAdapter(logger)
     return _LOGGERS[logger_name]
 
-ACCESS_LOG = get_logger('access_log', r'logs/access.log')
+ACCESS_LOG = get_logger('access')
 
 async def access_log_middleware(app, handler):
     async def _middleware_handler(request):

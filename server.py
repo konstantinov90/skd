@@ -25,7 +25,7 @@ from utils.aio import aio
 from utils.db_client import db
 
 LOG = app_log.get_logger()
-MEM_LOG = app_log.get_logger('mem_log', r'logs/memory.log')
+MEM_LOG = app_log.get_logger('memory')
 
 tracemalloc.start()
 
@@ -115,8 +115,8 @@ async def get_last_checks_portion(key, query):
     mem_cache[key].update(response=response_data, hash=hash_obj(response_data))
 
 
-async def get_last_checks():
-    while True:
+async def get_last_checks(app):
+    while app['running']:
         tasks = [aio.sleep(0.5)]
         for k, v in list(mem_cache.items()):
             tasks.append(aio.ensure_future(get_last_checks_portion(k, v['query'])))
@@ -212,11 +212,10 @@ from logging import LogRecord
 import sys
 import gc
 
-async def memory_log():
-    while True:
+async def memory_log(app):
+    while app['running']:
         snapshot = tracemalloc.take_snapshot()
         top_stats = snapshot.statistics('lineno')
-        MEM_LOG.info('='*40)
         lr = []
         for obj in gc.get_objects():
             if isinstance(obj, LogRecord):
@@ -229,8 +228,8 @@ async def memory_log():
 
 async def on_shutdown(app):
     LOG.info('server shutting down')
-    cache_manager.stop()
-    await app['refresher']
+    app['running'] = False
+    await aio.gather(app['mem_log'], app['result_cache'], app['refresher'])
 
 mem_cache = TTLDict()
 
@@ -264,10 +263,10 @@ def init(loop):
     cors.add(app.router.add_post('/auth', login))
     app.router.add_post('/create_user', create_user)
 
-    app['refresher'] = aio.ensure_future(cache_manager.refresher())
-    # app['mem_cache'] = aio.ensure_future(mem_cache.activate())
-    aio.ensure_future(get_last_checks())
-    aio.ensure_future(memory_log())
+    app['running'] = True
+    app['refresher'] = aio.ensure_future(cache_manager.refresher(app))
+    app['result_cache'] = aio.ensure_future(get_last_checks(app))
+    app['mem_log'] = aio.ensure_future(memory_log(app))
     app.on_shutdown.append(on_shutdown)
     return app
 

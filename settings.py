@@ -6,7 +6,7 @@ MAX_CONCURRENT_CHECKS = 20
 
 CACHE_REFRESH_SECONDS = 5
 
-LOG_NAME = r'logs/app.log'
+LOG_PATH = 'logs'
 
 DEBUG = True
 

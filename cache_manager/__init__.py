@@ -100,9 +100,9 @@ class Cache(object):
         await db.commit.update({}, curr_commit)
         LOG.info('git tick')
 
-    async def refresher(self):
+    async def refresher(self, app):
         timeout_error_wait = 1
-        while True:
+        while app['running']:
             self.future = aio.aio.ensure_future(self.refresh())
             self.waiting = aio.aio.ensure_future(aio.aio.sleep(S.CACHE_REFRESH_SECONDS))
             try:
@@ -126,8 +126,5 @@ class Cache(object):
 
 _CACHE = Cache()
 
-async def refresher():
-    return await _CACHE.refresher()
-
-def stop():
-    return _CACHE.stop()
+async def refresher(app):
+    return await _CACHE.refresher(app)
