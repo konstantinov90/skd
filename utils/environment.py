@@ -5,16 +5,14 @@ import inspect
 import traceback
 from collections import abc
 from operator import itemgetter
-import os
 import re
 
 import aiofiles
 import xlsxwriter
 
-from utils import DB, aio
+from utils import DB, aio, app_log
 from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
-from utils import app_log
 
 LOG = app_log.get_logger('env')
 get_ora_con_str = itemgetter('login', 'password', 'db')
@@ -107,8 +105,8 @@ def environment(target):
                 if 'result_filename' in check:
                     raise Exception('cannot save file twice!')
 
-                if len(result) > 10000:
-                    result = [('Слишком много записей, вывожу 10000 строк',)] + result[:10000] 
+                # if len(result) > 10000:
+                #     result = [('Слишком много записей, вывожу 10000 строк',)] + result[:10000] 
 
                 if len(result) <= 10001:
                     await check.generate_filename('xlsx')
@@ -125,8 +123,7 @@ def environment(target):
                     adapter = Adapter()
                     writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
                                         quoting=csv.QUOTE_MINIMAL)
-                    await aio.proc_run(writer.writerows(result))
-                    LOG.info('len results = {}', len(result))
+                    writer.writerows(result)
                     
                     async with aiofiles.open(check.filename, 'w') as fd:
                         await fd.write(adapter.lines)
@@ -134,7 +131,6 @@ def environment(target):
             else:
                 logical_result = result
         except Exception as exc:
-            traceback.print_exc()
             LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
