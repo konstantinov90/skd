@@ -108,7 +108,7 @@ def environment(target):
                     raise Exception('cannot save file twice!')
 
                 if len(result) > 10000:
-                    result = [('Слишком много записей, вывожу 10000 строк')] + result[:10000] 
+                    result = [('Слишком много записей, вывожу 10000 строк',)] + result[:10000] 
 
                 if len(result) <= 10000:
                     await check.generate_filename('xlsx')
