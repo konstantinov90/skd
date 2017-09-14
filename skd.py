@@ -34,6 +34,7 @@ async def run_task(task):
         '$or': task.get('checks', [{}])
     }
     async for _check in db.cache.find(query):
+        check = Check(_check)
         if check['extension'] == 'py':
             running_checks.append(aio.aio.ensure_future(py(check, task)))
         elif check['extension'] == 'sql':
