@@ -6,6 +6,7 @@ import traceback
 from collections import abc
 from operator import itemgetter
 import os
+import re
 
 import aiofiles
 import xlsxwriter
@@ -108,28 +109,29 @@ def environment(target):
 
                 await check.generate_filename('xlsx')
 
-                wb = xlsxwriter.Workbook(check.filename)
-                sh = wb.add_worksheet(check['name'][:31])
-                for i, row in enumerate(result):
-                    # for j, el in enumerate(row):
-                    await aio.async_run(sh.write_row, i, 0, row)
-                await aio.async_run(wb.close)
-                await check.calc_crc32()
+                if len(results) > 10000:
+                    wb = xlsxwriter.Workbook(check.filename)
+                    sh = wb.add_worksheet(check['name'][:31])
+                    for i, row in enumerate(result):
+                        # for j, el in enumerate(row):
+                        await aio.async_run(sh.write_row, i, 0, row)
+                    await aio.async_run(wb.close)
+                    await check.calc_crc32()
 
+                else:
+                    adapter = Adapter()
+                    writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
+                                        quoting=csv.QUOTE_MINIMAL)
+                    writer.writerows(result)
+                    
+                    async with aiofiles.open(check_filename, 'w') as fd:
+                        await fd.write(adapter.lines)
 
-                # adapter = Adapter()
-                # writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
-                #                     quoting=csv.QUOTE_MINIMAL)
-                # writer.writerows(result)
-                #
-                # async with aiofiles.open(check['result_filename'], 'w') as fd:
-                #     await fd.write(adapter.lines)
             else:
                 logical_result = result
         except Exception as exc:
             traceback.print_exc()
             LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], exc)
-            print(check.data)
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
@@ -138,10 +140,17 @@ def environment(target):
 
     return decorated_func
 
+def print(msg, check_id):
+    LOG.info('check {} said: {}', check_id, msg)
+
 @environment
 async def py(cached_code, check, task):
+
     try:
-        eval(compile(cached_code, '<string>', 'single'))
+        logging_cached_code = re.sub('print((.*))', r'print(\1, check_id="{}")'.format(check['_id']), cached_code)
+        # logging_cached_code = cached_code
+        eval(compile(logging_cached_code, '<string>', 'single'))
+
         func = locals()['run_check']
         ans = await func()
         return ans
