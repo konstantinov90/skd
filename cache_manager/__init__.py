@@ -13,7 +13,6 @@ from . import kerberos_auth
 
 LOG = app_log.get_logger()
 
-col = db.cache
 # db.commit.remove()
 
 # r = git.Repo('reg')
@@ -40,7 +39,7 @@ class Cache(object):
     def __init__(self):
         '''initialize cache'''
         self.repos = {}
-        aio.run(col.remove)
+        aio.run(db.cache.remove)
         aio.run(db.commit.remove)
         if not os.path.isdir(repos_dir):
             os.mkdir(repos_dir)
@@ -63,10 +62,10 @@ class Cache(object):
                     blob = checks.GitBlobWrapper(file)
                     try:
                         check = aio.run(blob.make_check)
-                    except checks.CheckExtError as e:
+                    except checks.CheckExtError:
                         LOG.warning('file {} ignored', blob)
                         continue
-                    aio.run(col.insert, check.data)
+                    aio.run(db.cache.insert, check.data)
             curr_commit[repo_name] = repo.commit().hexsha
         aio.run(db.commit.insert, curr_commit)
 
@@ -90,11 +89,11 @@ class Cache(object):
                     file.change_type = 'D'
 
                 if file.change_type == 'D':
-                    await col.remove(blob_from.data)
+                    await db.cache.remove(blob_from.data)
                 elif file.change_type == 'A':
-                    await col.insert(check.data)
+                    await db.cache.insert(check.data)
                 elif re.match(r'^R\d{3}$|^M$', file.change_type):
-                    await col.update(blob_from.data, check.data, upsert=True)
+                    await db.cache.update(blob_from.data, check.data, upsert=True)
                 else:
                     raise ValueError('unexpected change_type for file {}', blob_from.full_path)
                 curr_commit[repo_name] = repo.commit().hexsha
