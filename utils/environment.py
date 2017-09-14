@@ -107,9 +107,9 @@ def environment(target):
                 if 'result_filename' in check:
                     raise Exception('cannot save file twice!')
 
-                await check.generate_filename('xlsx')
 
                 if len(result) <= 10000:
+                    await check.generate_filename('xlsx')
                     wb = xlsxwriter.Workbook(check.filename)
                     sh = wb.add_worksheet(check['name'][:31])
                     for i, row in enumerate(result):
@@ -119,6 +119,7 @@ def environment(target):
                     await check.calc_crc32()
 
                 else:
+                    await check.generate_filename('csv')
                     adapter = Adapter()
                     writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
                                         quoting=csv.QUOTE_MINIMAL)
