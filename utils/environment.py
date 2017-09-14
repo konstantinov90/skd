@@ -109,7 +109,7 @@ def environment(target):
 
                 await check.generate_filename('xlsx')
 
-                if len(results) > 10000:
+                if len(result) > 10000:
                     wb = xlsxwriter.Workbook(check.filename)
                     sh = wb.add_worksheet(check['name'][:31])
                     for i, row in enumerate(result):
@@ -124,7 +124,7 @@ def environment(target):
                                         quoting=csv.QUOTE_MINIMAL)
                     writer.writerows(result)
                     
-                    async with aiofiles.open(check_filename, 'w') as fd:
+                    async with aiofiles.open(check.filename, 'w') as fd:
                         await fd.write(adapter.lines)
 
             else:
