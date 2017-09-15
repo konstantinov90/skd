@@ -106,7 +106,7 @@ class PyCheck(Check):
             exec(comp)
         except Exception:
             pass
-        finally:
+        else:
             func = locals()['run_check']
             self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
 
