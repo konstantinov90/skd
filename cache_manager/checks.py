@@ -101,9 +101,13 @@ class PyCheck(Check):
         await super()._init()
         check = {'check': "this out"}
         task = {'dummy': 'task'}
-        comp = await aio.async_run(compile, self.content, '<string>', 'single')
-        exec(comp)
-        func = locals()['run_check']
-        self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
+        try:
+            comp = await aio.async_run(compile, self.content, '<string>', 'single')
+            exec(comp)
+        except Exception:
+            pass
+        finally:
+            func = locals()['run_check']
+            self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
 
         # LOG.info('python check {}', self.blob.full_path)
