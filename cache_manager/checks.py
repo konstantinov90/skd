@@ -76,6 +76,7 @@ class Check(object):
 
     @property
     def data(self):
+
         data = copy.deepcopy(self.meta)
         data.update(self.blob.data, content=self.content)
         return data
@@ -109,5 +110,7 @@ class PyCheck(Check):
         else:
             func = locals()['run_check']
             self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
+            if isinstance(self.meta, str):
+                self.meta = {'meta': self.meta}
 
         # LOG.info('python check {}', self.blob.full_path)
