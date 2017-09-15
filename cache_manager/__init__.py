@@ -1,5 +1,6 @@
 import datetime
 import os.path
+import traceback
 import re
 
 import git
@@ -79,24 +80,32 @@ class Cache(object):
             if repo.commit().hexsha == curr_commit[repo_name]:
                 continue
             diff = await aio.async_run(repo.tree(curr_commit[repo_name]).diff, repo.tree(repo.commit().hexsha))
+            msg = ''
             for file in diff:
                 blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
                 blob_to = checks.GitBlobWrapper(file.b_blob) if file.b_blob else None
                 try:
                     check = (await blob_to.make_check()) if blob_to else None
                 except checks.CheckExtError:
-                    LOG.warning('file {} ignored', blob_to)
+                    msg += 'non-check file {} ignored\n'.format(blob_to)
                     file.change_type = 'D'
 
                 if file.change_type == 'D':
-                    await db.cache.remove(blob_from.data)
+                    if blob_from:
+                        await db.cache.remove(blob_from.data)
+                        msg += 'check {} removed\n'.format(blob_from)
                 elif file.change_type == 'A':
                     await db.cache.insert(check.data)
+                    msg += 'check {} added\n'.format(blob_to)
                 elif re.match(r'^R\d{3}$|^M$', file.change_type):
                     await db.cache.update(blob_from.data, check.data, upsert=True)
+                    msg += 'check {} updated\n'.format(blob_from)
                 else:
-                    raise ValueError('unexpected change_type for file {}', blob_from.full_path)
-                curr_commit[repo_name] = repo.commit().hexsha
+                    raise ValueError('unexpected change_type for file {}', blob_from)
+            cmt = repo.commit()
+            curr_commit[repo_name] = cmt.hexsha
+            athr = cmt.author
+            LOG.info('{}by {} ({}) <{}> @ {}', msg, athr.name, athr.committer(), athr.email, athr.summary)
         await db.commit.update({}, curr_commit)
         LOG.info('git tick')
 
@@ -115,7 +124,7 @@ class Cache(object):
                 timeout_error_wait = min(2 * timeout_error_wait, 300)
                 continue
             except Exception as exc:
-                LOG.error('{}: {}', type(exc), exc)
+                LOG.error('{}', traceback.format_exc())
             if not self.refreshing:
                 await self.future
                 break

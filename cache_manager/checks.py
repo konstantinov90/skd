@@ -25,7 +25,7 @@ class GitBlobWrapper(object):
         self.filename, self.operation = check_op
         self.check, self.ext = os.path.splitext(self.filename)
         self.ext = self.ext.strip('.').lower()
-        self.full_path = os.path.join(path, self.operation) + '/' + self.filename
+        self.full_path = os.path.join(path, self.operation, self.filename)
 
         self.hash = blob.hexsha
         _, self.system = os.path.split(blob.repo.working_tree_dir)
@@ -34,9 +34,8 @@ class GitBlobWrapper(object):
         return self.full_path
 
     async def make_check(self):
-        print
-        # if not os.path.isfile(self.full_path):
-        #     raise CheckExtError('ignoring directory {}'.format(self.full_path))
+        if not os.path.isfile(self.full_path):
+            raise CheckExtError('ignoring directory {}'.format(self.full_path))
 
         if self.ext == 'yml':
             inst = YmlCheck(self)
@@ -73,7 +72,6 @@ class Check(object):
             self.content = await read_file(self.blob.full_path)
         except UnicodeDecodeError:
             self.content = await read_file(self.blob.full_path, encoding='windows-1251')
-
         self.content = re.sub(';\s*$', '', self.content)
 
     @property
@@ -88,14 +86,14 @@ class YmlCheck(Check):
         self.meta = await aio.async_run(yaml.load, self.content)
         self.content = self.meta.pop('query')
 
-        LOG.info('yml check {}', self.blob.full_path)
+        # LOG.info('yml check {}', self.blob.full_path)
 
 
 class SqlCheck(Check):
     async def _init(self):
         await super()._init()
 
-        LOG.info('sql check {}', self.blob.full_path)
+        # LOG.info('sql check {}', self.blob.full_path)
 
 
 class PyCheck(Check):
@@ -108,4 +106,4 @@ class PyCheck(Check):
         func = locals()['run_check']
         self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
 
-        LOG.info('python check {}', self.blob.full_path)
+        # LOG.info('python check {}', self.blob.full_path)
