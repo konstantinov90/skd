@@ -119,7 +119,7 @@ async def cached_get_last_checks(request):
 
 
 def getter(collection):
-    @auth.system_required('view')
+    # @auth.system_required('view')
     async def route(request):
         query = request['body']['query']
 
@@ -212,7 +212,7 @@ async def on_shutdown(app):
 
 def init(loop):
     tracemalloc.start()
-    cache_manager.create_cache()
+    # cache_manager.Cache()
 
     middlewares = [
         json_util.request_parser_middleware,
@@ -245,7 +245,7 @@ def init(loop):
 
     app['running'] = True
     app['mem_cache'] = TTLDict()
-    app['refresher'] = aio.aio.ensure_future(cache_manager.refresher(app))
+    app['refresher'] = aio.aio.ensure_future(cache_manager.Cache().refresher(app))
     app['result_cache'] = aio.aio.ensure_future(get_last_checks(app))
     app['mem_log'] = aio.aio.ensure_future(memory_log(app))
     app.on_shutdown.append(on_shutdown)
