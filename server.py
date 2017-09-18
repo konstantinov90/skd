@@ -260,9 +260,10 @@ if __name__ == '__main__':
         from classes import check
 
 
-
-        for ch in aio.run(check.Check(_check).col.find({'system': 'BR'}).to_list, None):
-            print(ch)
+        _ch = check.Check(_check)
+        aio.run(_ch.save)
+        # for ch in aio.run(_ch.col.find({'system': 'BR'}).to_list, None):
+        #     print(ch)
         # t = aio.aio.ensure_future(skd.fork(check, task))
         # time.sleep(10)
         # aio.aio.get_event_loop().run_until_complete(t)
