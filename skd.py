@@ -1,7 +1,6 @@
 import os
 import os.path
 import sys
-import pickle
 import platform
 from subprocess import Popen
 
@@ -47,7 +46,7 @@ async def run_task(task):
     await aio.aio.wait(running_checks)
     await task.finish()
 
-# async def fork(_check, task):
+if __name__ == '__main__':
     # try:
     #     import resource
     # except ModuleNotFoundError:
@@ -55,11 +54,9 @@ async def run_task(task):
     # else:
     #     half_gig = 2**29
     #     resource.setrlimit(resource.RLIMIT_AS, (half_gig, half_gig))
-if __name__ == '__main__':
     _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
     check = Check(_check)
     task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-    # task = Task(_task)
     if check['extension'] == 'py':
         aio.run(py, check, task)
     elif check['extension'] == 'sql':
