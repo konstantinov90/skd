@@ -43,7 +43,7 @@ async def run_task(task):
         # elif check['extension'] == 'yml':
         #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
         LOG.info('delegating to process (active {})', threading.active_count())
-        proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], shell=True)
+        proc = Popen([PROC_NAME + '{}.py'.format(__name__) + json_util.dumps(_check) + json_util.dumps(task.data)], shell=True)
         running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
 
     await aio.aio.wait(running_checks)
@@ -73,14 +73,14 @@ if __name__ == '__main__':
     task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
     # task = Task(_task)
     LOG.info('starting thread (active {})', threading.active_count())
-    aio.run(check_mongo)
-    # try:
-    #     if check['extension'] == 'py':
-    #         aio.run(py, check, task)
-    #     elif check['extension'] == 'sql':
-    #         aio.run(sql, check, task)
-    #     elif check['extension'] == 'yml':
-    #         aio.run(yml, check, task)
-    # except Exception:
-    #     LOG.error('{}', traceback.format_exc())
+    # aio.run(check_mongo)
+    try:
+        if check['extension'] == 'py':
+            aio.run(py, check, task)
+        elif check['extension'] == 'sql':
+            aio.run(sql, check, task)
+        elif check['extension'] == 'yml':
+            aio.run(yml, check, task)
+    except Exception:
+        LOG.error('{}', traceback.format_exc())
     
