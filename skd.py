@@ -61,9 +61,9 @@ if __name__ == '__main__':
     task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
     # task = Task(_task)
     if check['extension'] == 'py':
-        await py(check, task)
+        aio.run(py, check, task)
     elif check['extension'] == 'sql':
-        await sql(check, task)
+        aio.run(sql, check, task)
     elif check['extension'] == 'yml':
-        await yml(check, task)
+        aio.run(yml, check, task)
     
