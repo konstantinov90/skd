@@ -254,12 +254,14 @@ def init(loop):
 if __name__ == '__main__':
     if '--single' in sys.argv:
         import time
-        check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
+        _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
 
         from classes import check
 
-        for ch in aio.run(check.col.find({'system': 'BR'}).to_list, None):
+
+
+        for ch in aio.run(check.Check(_check).col.find({'system': 'BR'}).to_list, None):
             print(ch)
         # t = aio.aio.ensure_future(skd.fork(check, task))
         # time.sleep(10)
