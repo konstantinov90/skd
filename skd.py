@@ -69,6 +69,8 @@ if __name__ == '__main__':
         half_gig = 2**29
         resource.setrlimit(resource.RLIMIT_AS, (half_gig, half_gig))
 
+    LOG.info('got arguments {}', sys.argv)
+
     _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
     check = Check(_check)
     task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
