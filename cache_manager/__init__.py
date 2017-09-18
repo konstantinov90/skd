@@ -18,7 +18,6 @@ LOG = app_log.get_logger()
 
 # r = git.Repo('reg')
 repos_dir = 'reg'
-curr_commit = {}
 
 # supposed repo form
 # system_code/
@@ -37,6 +36,7 @@ curr_commit = {}
 #                            check2.meta
 #######################################################################
 class Cache(object):
+    curr_commit = {}
     def __init__(self):
         '''initialize cache'''
         self.repos = {}
@@ -71,8 +71,8 @@ class Cache(object):
                         continue
                     aio.run(db.cache.insert, check.data)
                     LOG.info('check {} created', blob)
-            curr_commit[repo_name] = repo.commit().hexsha
-        aio.run(db.commit.insert, curr_commit)
+            self.curr_commit[repo_name] = repo.commit().hexsha
+        aio.run(db.commit.insert, self.curr_commit)
 
         self.refreshing = True
         self.future, self.waiting = None, None
@@ -81,9 +81,9 @@ class Cache(object):
         '''pull and refresh cache'''
         for repo_name, repo in self.repos.items():
             await aio.aio.wait_for(aio.async_run(repo.remotes.origin.pull, 'master'), 60)
-            if repo.commit().hexsha == curr_commit[repo_name]:
+            if repo.commit().hexsha == self.curr_commit[repo_name]:
                 continue
-            diff = await aio.async_run(repo.tree(curr_commit[repo_name]).diff, repo.tree(repo.commit().hexsha))
+            diff = await aio.async_run(repo.tree(self.curr_commit[repo_name]).diff, repo.tree(repo.commit().hexsha))
             msg = ''
             for file in diff:
                 blob_from = checks.GitBlobWrapper(file.a_blob) if file.a_blob else None
@@ -107,10 +107,10 @@ class Cache(object):
                 else:
                     raise ValueError('unexpected change_type for file {}', blob_from)
             cmt = repo.commit()
-            curr_commit[repo_name] = cmt.hexsha
+            self.curr_commit[repo_name] = cmt.hexsha
             athr = cmt.author
             LOG.info('{}by {} ({}) <{}> @ {}', msg, athr.name, athr.committer(), athr.email, athr.summary)
-        await db.commit.update({}, curr_commit)
+        await db.commit.update({}, self.curr_commit)
         LOG.info('git tick')
 
     async def refresher(self, app):
@@ -137,7 +137,10 @@ class Cache(object):
         self.refreshing = False
         self.waiting.cancel()
 
-_CACHE = Cache()
+_CACHE = None
+
+def create_cache():
+    _CACHE = Cache()
 
 async def refresher(app):
     return await _CACHE.refresher(app)

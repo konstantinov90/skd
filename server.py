@@ -4,6 +4,7 @@ import hashlib
 from operator import itemgetter
 import os
 import os.path
+import sys
 import tracemalloc
 import urllib.parse
 
@@ -26,8 +27,6 @@ from utils.db_client import db
 
 LOG = app_log.get_logger()
 MEM_LOG = app_log.get_logger('memory')
-
-tracemalloc.start()
 
 async def index(request):
     return 'SKD rest api'
@@ -71,7 +70,7 @@ def hash_obj(obj):
     dummy = json_util.dumps(obj).encode('utf-8')
     return hashlib.sha1(dummy).hexdigest()
 
-async def get_last_checks_portion(key, query):
+async def get_last_checks_portion(key, query, mem_cache):
     LOG.debug('{} getting check {}', key, query)
 
     checks_tmpls_query = {'system': query['system']}
@@ -87,20 +86,24 @@ async def get_last_checks_portion(key, query):
         if check['key_path'] in check_tmpls_map:
             check_tmpls_map[check['key_path']].update(check=check)
     response_data = list(check_tmpls_map.values())
-    mem_cache[key].update(response=response_data, hash=hash_obj(response_data))
+    response_hash = hash_obj(response_data)
+    if mem_cache[key]['hash'] != response_hash:
+        mem_cache[key].update(response=response_data, hash=response_hash)
 
 
 async def get_last_checks(app):
+    mem_cache = app['mem_cache']
     while app['running']:
         tasks = [aio.sleep(0.5)]
         for k, v in list(mem_cache.items()):
-            tasks.append(aio.ensure_future(get_last_checks_portion(k, v['query'])))
+            tasks.append(aio.ensure_future(get_last_checks_portion(k, v['query'], mem_cache)))
         await aio.wait(tasks)
         mem_cache.seek_and_destroy()
 
 
 # @auth.system_required('view')
 async def cached_get_last_checks(request):
+    mem_cache = request.app['mem_cache']
 
     query = request['body']['query']
     response_hash = request['body'].get('response_hash')
@@ -206,9 +209,11 @@ async def on_shutdown(app):
     app['running'] = False
     await aio.gather(app['mem_log'], app['result_cache'], app['refresher'])
 
-mem_cache = TTLDict()
 
 def init(loop):
+    tracemalloc.start()
+    cache_manager.create_cache()
+
     middlewares = [
         json_util.request_parser_middleware,
         auth.auth_middleware,
@@ -239,10 +244,18 @@ def init(loop):
     app.router.add_post('/create_user', create_user)
 
     app['running'] = True
+    app['mem_cache'] = TTLDict()
     app['refresher'] = aio.ensure_future(cache_manager.refresher(app))
     app['result_cache'] = aio.ensure_future(get_last_checks(app))
     app['mem_log'] = aio.ensure_future(memory_log(app))
     app.on_shutdown.append(on_shutdown)
     return app
 
-web.run_app(init(aio.get_event_loop()), port=settings.PORT)
+if __name__ == '__main__':
+    if '--single' == sys.argv[3]:
+        check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
+        task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
+        skd.fork(check, task)
+    else:
+        web.run_app(init(aio.get_event_loop()), port=settings.PORT)
+
