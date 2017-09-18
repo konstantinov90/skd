@@ -258,7 +258,7 @@ if __name__ == '__main__':
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
         t = aio.aio.ensure_future(skd.fork(check, task))
         time.sleep(10)
-        aio.run(t)
+        aio.aio.run_until_complete(t)
     else:
         web.run_app(init(aio.aio.get_event_loop()), port=settings.PORT)
 
