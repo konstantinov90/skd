@@ -42,7 +42,7 @@ async def run_task(task):
         #     running_checks.append(aio.aio.ensure_future(sql(check, task)))
         # elif check['extension'] == 'yml':
         #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
-        proc_task = '{} {} {!r} {!r}'.format(PROC_NAME, '{}.py'.format(__name__), json_util.uglify(_check), json_util.uglify(task.data))
+        proc_task = '{} {} {} {}'.format(PROC_NAME, '{}.py'.format(__name__), json_util.uglify(_check), json_util.uglify(task.data))
         LOG.info('delegating to process (active {}) {}', threading.active_count(), proc_task)
         proc = Popen([proc_task], shell=True)
         running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
