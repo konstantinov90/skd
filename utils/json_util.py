@@ -22,6 +22,9 @@ if settings.DEBUG:
 else:
     _ENCODER = JSONEncoder()
 
+def uglify(obj, **kwargs):
+    return JSONEncoder().encode(obj, **kwargs)
+
 def dumps(obj, **kwargs):
     return _ENCODER.encode(obj, **kwargs)
 
