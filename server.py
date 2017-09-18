@@ -256,8 +256,9 @@ if __name__ == '__main__':
         import time
         check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-        aio.aio.ensure_future(skd.fork(check, task))
+        t = aio.aio.ensure_future(skd.fork(check, task))
         time.sleep(10)
+        aio.run(t)
     else:
         web.run_app(init(aio.aio.get_event_loop()), port=settings.PORT)
 
