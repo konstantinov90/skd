@@ -34,20 +34,20 @@ async def run_task(task):
         '$or': task.get('checks', [{}])
     }
     async for _check in db.cache.find(query):
-        check = Check(_check)
-        if check['extension'] == 'py':
-            running_checks.append(aio.aio.ensure_future(py(check, task)))
-        elif check['extension'] == 'sql':
-            running_checks.append(aio.aio.ensure_future(sql(check, task)))
-        elif check['extension'] == 'yml':
-            running_checks.append(aio.aio.ensure_future(yml(check, task)))
-        # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
-        # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
+        # check = Check(_check)
+        # if check['extension'] == 'py':
+        #     running_checks.append(aio.aio.ensure_future(py(check, task)))
+        # elif check['extension'] == 'sql':
+        #     running_checks.append(aio.aio.ensure_future(sql(check, task)))
+        # elif check['extension'] == 'yml':
+        #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
+        proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
+        running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
 
     await aio.aio.wait(running_checks)
     await task.finish()
 
-async def fork(_check, task):
+# async def fork(_check, task):
     # try:
     #     import resource
     # except ModuleNotFoundError:
@@ -55,10 +55,10 @@ async def fork(_check, task):
     # else:
     #     half_gig = 2**29
     #     resource.setrlimit(resource.RLIMIT_AS, (half_gig, half_gig))
-
-    # _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
+if __name__ == '__main__':
+    _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
     check = Check(_check)
-    # task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
+    task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
     # task = Task(_task)
     if check['extension'] == 'py':
         await py(check, task)
