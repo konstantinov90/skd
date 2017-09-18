@@ -15,7 +15,8 @@ class CheckExtError(Exception):
 
 
 class GitBlobWrapper(object):
-    def __init__(self, blob):
+    def __init__(self, system, blob):
+        self.system = system
         check_op = []
         path = blob.abspath
         for _ in range(2):
@@ -26,9 +27,8 @@ class GitBlobWrapper(object):
         self.check, self.ext = os.path.splitext(self.filename)
         self.ext = self.ext.strip('.').lower()
         self.full_path = os.path.join(path, self.operation, self.filename)
-
         self.hash = blob.hexsha
-        _, self.system = os.path.split(blob.repo.working_tree_dir)
+        self.key_path = os.path.join(self.system, self.operation, self.filename)
 
     def __repr__(self):
         return self.full_path
@@ -45,7 +45,10 @@ class GitBlobWrapper(object):
             inst = PyCheck(self)
         else:
             raise CheckExtError(self.full_path, self.ext)
-        await inst._init()
+        try:
+            await inst._init()
+        except UnicodeDecodeError:
+            raise
         return inst
 
     @property
@@ -55,7 +58,8 @@ class GitBlobWrapper(object):
             'operation': self.operation,
             'name': self.check,
             'extension': self.ext,
-            'hash': self.hash
+            'hash': self.hash,
+            'key_path': self.key_path,
         }
 
 
@@ -68,10 +72,15 @@ class Check(object):
         async def read_file(filename, encoding='utf-8'):
             async with aiofiles.open(filename, 'r', encoding=encoding) as fd:
                 return await fd.read()
-        try:
-            self.content = await read_file(self.blob.full_path)
-        except UnicodeDecodeError:
-            self.content = await read_file(self.blob.full_path, encoding='windows-1251')
+        for enc in 'utf-8-sig', 'utf-8', 'windows-1251':
+            try:
+                self.content = await read_file(self.blob.full_path, encoding=enc)
+            except UnicodeDecodeError:
+                continue
+            else:
+                break
+        else:
+            raise UnicodeDecodeError
         self.content = re.sub(';\s*$', '', self.content)
 
     @property

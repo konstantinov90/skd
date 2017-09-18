@@ -60,13 +60,17 @@ class Cache(object):
                 if operation.trees:
                     raise Exception('supposed repo form condition is not met!')
                 for file in operation.blobs:
-                    blob = checks.GitBlobWrapper(file)
+                    blob = checks.GitBlobWrapper(repo_name, file)
                     try:
                         check = aio.run(blob.make_check)
                     except checks.CheckExtError:
                         LOG.warning('file {} ignored', blob)
                         continue
+                    except UnicodeDecodeError:
+                        LOG.error('could not decode file {}', blob)
+                        continue
                     aio.run(db.cache.insert, check.data)
+                    LOG.info('check {} created', blob)
             curr_commit[repo_name] = repo.commit().hexsha
         aio.run(db.commit.insert, curr_commit)
 

@@ -10,10 +10,10 @@ import urllib.parse
 import aiofiles
 import aiohttp.web as web
 import aiohttp_cors
-import aiohttp_session
+# import aiohttp_session
 import pymongo.errors
-from aiohttp_session.cookie_storage import EncryptedCookieStorage
-from cryptography import fernet
+# from aiohttp_session.cookie_storage import EncryptedCookieStorage
+# from cryptography import fernet
 from multidict import MultiDict
 
 import skd
@@ -67,28 +67,6 @@ async def create_user(request):
 async def receive_task(request):
     return await skd.register_task(request['body'])
 
-_KEY = itemgetter(*'system operation name extension'.split())
-
-# async def _get_last_checks(query):
-#     checks = {}
-#     print(query)
-#     async for task in db.tasks.find(query).sort([('started', -1)]):
-#         task_id = task['_id']
-#         async for check in db.checks.find({'task_id': task_id}).sort([('name', 1), ('extension', 1)]):
-#             current_key = _KEY(check)
-#             if current_key in checks:
-#                 continue
-#             checks[current_key] = check
-#     check_tmpls = await db.cache.find({
-#         'system': query['system'],
-#         # 'operation': _REGEXPR,
-#     }, {'content': 0}).sort([('operation', 1), ('name', 1), ('extension', 1)]).to_list(None)
-#     for check_tmpl in check_tmpls:
-#         check = checks.get(_KEY(check_tmpl))
-#         if check:
-#             check_tmpl['check'] = check
-#     return check_tmpls
-
 def hash_obj(obj):
     dummy = json_util.dumps(obj).encode('utf-8')
     return hashlib.sha1(dummy).hexdigest()
@@ -101,16 +79,13 @@ async def get_last_checks_portion(key, query):
     if 'operation' in query:
         checks_tmpls_query.update(operation=query['operation'])
 
-    check_tmpls_map = {}
-    async for check_tmpl in db.cache.find(checks_tmpls_query, {'content': 0}).sort(sort_by):
-        current_key = _KEY(check_tmpl)
-        check_tmpls_map[current_key] = check_tmpl
+    check_tmpls_map = {check_tmpl['key_path']: check_tmpl async for check_tmpl
+                       in db.cache.find(checks_tmpls_query, {'content': 0}).sort(sort_by)}
 
     query['latest'] = True
     async for check in db.checks.find(query):
-        current_key = _KEY(check)
-        if current_key in check_tmpls_map:
-            check_tmpls_map[current_key].update(check=check)
+        if check['key_path'] in check_tmpls_map:
+            check_tmpls_map[check['key_path']].update(check=check)
     response_data = list(check_tmpls_map.values())
     mem_cache[key].update(response=response_data, hash=hash_obj(response_data))
 
@@ -245,9 +220,9 @@ def init(loop):
 
     cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True)})
 
-    fernet_key = fernet.Fernet.generate_key()
-    secret_key = base64.urlsafe_b64decode(fernet_key)
-    aiohttp_session.setup(app, EncryptedCookieStorage(secret_key))
+    # fernet_key = fernet.Fernet.generate_key()
+    # secret_key = base64.urlsafe_b64decode(fernet_key)
+    # aiohttp_session.setup(app, EncryptedCookieStorage(secret_key))
 
     app.middlewares.append(json_util.response_encoder_middleware)
 

@@ -180,7 +180,8 @@ class OracleConnection(_DBConnection):
         super().__init__()
         do_not_connect = kwargs.pop('do_not_connect', False)
         kwargs.setdefault('threaded', True)
-        kwargs.setdefault('encoding', 'utf-8')
+        if int(cx_Oracle.version[0]) >= 6:
+            kwargs.setdefault('encoding', 'utf-8')
         self.con_func = partial(cx_Oracle.connect, *args, **kwargs)
         if not do_not_connect:
             self.con = self.con_func()
