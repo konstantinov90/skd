@@ -49,6 +49,15 @@ async def run_task(task):
     await aio.aio.wait(running_checks)
     await task.finish()
 
+async def check_mongo():
+    import motor.motor_asyncio as motor
+    import settings
+    db = motor.AsyncIOMotorClient(
+        settings.DATABASE, io_loop=aio.aio.get_event_loop()
+    ).get_default_database()
+    cache = await db.cache.find().to_list(None)
+    print(len(cache))
+
 if __name__ == '__main__':
     import traceback
     try:
@@ -64,13 +73,14 @@ if __name__ == '__main__':
     task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
     # task = Task(_task)
     LOG.info('starting thread (active {})', threading.active_count())
-    try:
-        if check['extension'] == 'py':
-            aio.run(py, check, task)
-        elif check['extension'] == 'sql':
-            aio.run(sql, check, task)
-        elif check['extension'] == 'yml':
-            aio.run(yml, check, task)
-    except Exception:
-        LOG.error('{}', traceback.format_exc())
+    aio.run(check_mongo)
+    # try:
+    #     if check['extension'] == 'py':
+    #         aio.run(py, check, task)
+    #     elif check['extension'] == 'sql':
+    #         aio.run(sql, check, task)
+    #     elif check['extension'] == 'yml':
+    #         aio.run(yml, check, task)
+    # except Exception:
+    #     LOG.error('{}', traceback.format_exc())
     
