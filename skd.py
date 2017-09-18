@@ -49,6 +49,7 @@ async def run_task(task):
 
 if __name__ == '__main__':
     import threading
+    import traceback
     try:
         import resource
     except ModuleNotFoundError:
