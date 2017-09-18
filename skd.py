@@ -48,13 +48,13 @@ async def run_task(task):
     await task.finish()
 
 async def fork(_check, task):
-    try:
-        import resource
-    except ModuleNotFoundError:
-        pass
-    else:
-        half_gig = 2**29
-        resource.setrlimit(resource.RLIMIT_AS, (half_gig, half_gig))
+    # try:
+    #     import resource
+    # except ModuleNotFoundError:
+    #     pass
+    # else:
+    #     half_gig = 2**29
+    #     resource.setrlimit(resource.RLIMIT_AS, (half_gig, half_gig))
 
     # _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
     check = Check(_check)
