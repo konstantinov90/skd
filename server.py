@@ -261,6 +261,7 @@ if __name__ == '__main__':
 
 
         _ch = check.Check(_check)
+        _ch['key'] = task['key']
         aio.run(_ch.save)
         # for ch in aio.run(_ch.col.find({'system': 'BR'}).to_list, None):
         #     print(ch)
