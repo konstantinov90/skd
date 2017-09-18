@@ -253,9 +253,11 @@ def init(loop):
 
 if __name__ == '__main__':
     if '--single' in sys.argv:
+        import time
         check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-        aio.run(skd.fork, check, task)
+        aio.aio.ensure_future(skd.fork(check, task))
+        time.sleep(10)
     else:
         web.run_app(init(aio.aio.get_event_loop()), port=settings.PORT)
 
