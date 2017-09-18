@@ -256,9 +256,11 @@ if __name__ == '__main__':
         import time
         check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-        t = aio.aio.ensure_future(skd.fork(check, task))
-        time.sleep(10)
-        aio.aio.get_event_loop().run_until_complete(t)
+        async for ch in db.cache.find({'system': 'BR'}):
+            print(ch)
+        # t = aio.aio.ensure_future(skd.fork(check, task))
+        # time.sleep(10)
+        # aio.aio.get_event_loop().run_until_complete(t)
     else:
         web.run_app(init(aio.aio.get_event_loop()), port=settings.PORT)
 
