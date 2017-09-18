@@ -256,7 +256,10 @@ if __name__ == '__main__':
         import time
         check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-        for ch in aio.run(db.cache.find({'system': 'BR'}).to_list, None):
+
+        from classes import check
+
+        for ch in aio.run(check.col.find({'system': 'BR'}).to_list, None):
             print(ch)
         # t = aio.aio.ensure_future(skd.fork(check, task))
         # time.sleep(10)
