@@ -252,7 +252,7 @@ def init(loop):
     return app
 
 if __name__ == '__main__':
-    if '--single' == sys.argv[3]:
+    if '--single' in sys.argv:
         check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
         aio.run(skd.fork, check, task)
