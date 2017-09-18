@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 proc_executor = concurrent.futures.ProcessPoolExecutor()
 lock = aio.Semaphore(S.MAX_CONCURRENT_CHECKS)
 
