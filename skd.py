@@ -48,6 +48,7 @@ async def run_task(task):
     await task.finish()
 
 if __name__ == '__main__':
+    import threading
     try:
         import resource
     except ModuleNotFoundError:
@@ -60,10 +61,14 @@ if __name__ == '__main__':
     check = Check(_check)
     task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
     # task = Task(_task)
-    if check['extension'] == 'py':
-        aio.run(py, check, task)
-    elif check['extension'] == 'sql':
-        aio.run(sql, check, task)
-    elif check['extension'] == 'yml':
-        aio.run(yml, check, task)
+    LOG.info('starting thread (active {})', threading.active_count())
+    try:
+        if check['extension'] == 'py':
+            aio.run(py, check, task)
+        elif check['extension'] == 'sql':
+            aio.run(sql, check, task)
+        elif check['extension'] == 'yml':
+            aio.run(yml, check, task)
+    except Exception:
+        LOG.error('{}', traceback.format_exc())
     
