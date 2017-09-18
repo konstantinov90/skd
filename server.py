@@ -21,8 +21,7 @@ import skd
 import cache_manager
 from classes.ttl_dict import TTLDict
 import settings
-from utils import app_log, authorization as auth, json_util
-from utils.aio import aio
+from utils import aio, app_log, authorization as auth, json_util
 from utils.db_client import db
 
 LOG = app_log.get_logger()
@@ -94,10 +93,10 @@ async def get_last_checks_portion(key, query, mem_cache):
 async def get_last_checks(app):
     mem_cache = app['mem_cache']
     while app['running']:
-        tasks = [aio.sleep(0.5)]
+        tasks = [aio.aio.sleep(0.5)]
         for k, v in list(mem_cache.items()):
-            tasks.append(aio.ensure_future(get_last_checks_portion(k, v['query'], mem_cache)))
-        await aio.wait(tasks)
+            tasks.append(aio.aio.ensure_future(get_last_checks_portion(k, v['query'], mem_cache)))
+        await aio.aio.wait(tasks)
         mem_cache.seek_and_destroy()
 
 
@@ -113,7 +112,7 @@ async def cached_get_last_checks(request):
 
     while response_hash == mem_cache[key]['hash']:
         mem_cache.refresh_item(key)
-        await aio.sleep(0.1)
+        await aio.aio.sleep(0.1)
 
     return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
 
@@ -202,12 +201,12 @@ async def memory_log(app):
         MEM_LOG.info('log records {}', len(lr))
         for stat in top_stats[:20]:
             MEM_LOG.info('{}', stat)
-        await aio.sleep(10)
+        await aio.aio.sleep(10)
 
 async def on_shutdown(app):
     LOG.info('server shutting down')
     app['running'] = False
-    await aio.gather(app['mem_log'], app['result_cache'], app['refresher'])
+    await aio.aio.gather(app['mem_log'], app['result_cache'], app['refresher'])
 
 
 def init(loop):
@@ -245,9 +244,9 @@ def init(loop):
 
     app['running'] = True
     app['mem_cache'] = TTLDict()
-    app['refresher'] = aio.ensure_future(cache_manager.refresher(app))
-    app['result_cache'] = aio.ensure_future(get_last_checks(app))
-    app['mem_log'] = aio.ensure_future(memory_log(app))
+    app['refresher'] = aio.aio.ensure_future(cache_manager.refresher(app))
+    app['result_cache'] = aio.aio.ensure_future(get_last_checks(app))
+    app['mem_log'] = aio.aio.ensure_future(memory_log(app))
     app.on_shutdown.append(on_shutdown)
     return app
 
@@ -255,7 +254,7 @@ if __name__ == '__main__':
     if '--single' == sys.argv[3]:
         check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-        skd.fork(check, task)
+        aio.run(skd.fork, check, task)
     else:
-        web.run_app(init(aio.get_event_loop()), port=settings.PORT)
+        web.run_app(init(aio.aio.get_event_loop()), port=settings.PORT)
 
