@@ -257,12 +257,13 @@ if __name__ == '__main__':
         _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
         task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
 
-        from classes import check
+        # from classes import check
 
 
-        _ch = check.Check(_check)
-        _ch['key'] = task['key']
-        aio.run(_ch.save)
+        # _ch = check.Check(_check)
+        # _ch['key'] = task['key']
+        # aio.run(_ch.save)
+        aio.run(skd.fork, _check, task)
         # for ch in aio.run(_ch.col.find({'system': 'BR'}).to_list, None):
         #     print(ch)
         # t = aio.aio.ensure_future(skd.fork(check, task))
