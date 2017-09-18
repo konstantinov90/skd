@@ -4,6 +4,7 @@ import sys
 import pickle
 import platform
 from subprocess import Popen
+import threading
 
 from classes import Task, Check
 import settings
@@ -41,6 +42,7 @@ async def run_task(task):
         #     running_checks.append(aio.aio.ensure_future(sql(check, task)))
         # elif check['extension'] == 'yml':
         #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
+        LOG.info('delegating to process (active {})', threading.active_count())
         proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)])
         running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
 
@@ -48,7 +50,6 @@ async def run_task(task):
     await task.finish()
 
 if __name__ == '__main__':
-    import threading
     import traceback
     try:
         import resource
