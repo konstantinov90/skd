@@ -88,7 +88,7 @@ def environment(target):
             started=datetime.datetime.now()
         )
         cached_code = check.pop('content')
-        await check.save()
+        # await check.save()
 
         try:
             result = await target(cached_code, check, task)
@@ -108,25 +108,25 @@ def environment(target):
                 # if len(result) > 10000:
                 #     result = [('Слишком много записей, вывожу 10000 строк',)] + result[:10000] 
 
-                if len(result) <= 10001:
-                    await check.generate_filename('xlsx')
-                    wb = xlsxwriter.Workbook(check.filename)
-                    sh = wb.add_worksheet(check['name'][:31])
-                    for i, row in enumerate(result):
-                        # for j, el in enumerate(row):
-                        await aio.async_run(sh.write_row, i, 0, row)
-                    await aio.async_run(wb.close)
-                    await check.calc_crc32()
+                # if len(result) <= 10001:
+                #     await check.generate_filename('xlsx')
+                #     wb = xlsxwriter.Workbook(check.filename)
+                #     sh = wb.add_worksheet(check['name'][:31])
+                #     for i, row in enumerate(result):
+                #         # for j, el in enumerate(row):
+                #         await aio.async_run(sh.write_row, i, 0, row)
+                #     await aio.async_run(wb.close)
+                #     await check.calc_crc32()
 
-                else:
-                    await check.generate_filename('csv')
-                    adapter = Adapter()
-                    writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
-                                        quoting=csv.QUOTE_MINIMAL)
-                    writer.writerows(result)
+                # else:
+                #     await check.generate_filename('csv')
+                #     adapter = Adapter()
+                #     writer = csv.writer(adapter, delimiter=';', lineterminator='\n',
+                #                         quoting=csv.QUOTE_MINIMAL)
+                #     writer.writerows(result)
                     
-                    async with aiofiles.open(check.filename, 'w') as fd:
-                        await fd.write(adapter.lines)
+                #     async with aiofiles.open(check.filename, 'w') as fd:
+                #         await fd.write(adapter.lines)
 
             else:
                 logical_result = result
@@ -135,7 +135,7 @@ def environment(target):
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
-        await check.finish(result=logical_result)
+        # await check.finish(result=logical_result)
         aio.lock.release()
 
     return decorated_func
