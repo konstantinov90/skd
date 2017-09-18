@@ -147,8 +147,8 @@ def print(msg, check_id):
 async def py(cached_code, check, task):
 
     try:
-        logging_cached_code = re.sub('print((.*))', r'print(\1, check_id="{}")'.format(check['_id']), cached_code)
-        # logging_cached_code = cached_code
+        # logging_cached_code = re.sub('print((.*))', r'print(\1, check_id="{}")'.format(check['_id']), cached_code)
+        logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))
 
         func = locals()['run_check']
