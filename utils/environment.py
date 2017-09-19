@@ -70,7 +70,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
                 async with aiofiles.open(check.filename, mode) as fd:
                     res = await target_func(*args, fd)
             else:
-                fd = await aio.async_run(open, check.result_filename, mode)
+                fd = await aio.async_run(open, check.filename, mode)
                 res = await aio.async_run(target_func, *args, fd)
                 fd.close()
             await check.calc_crc32()
