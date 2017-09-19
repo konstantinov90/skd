@@ -56,18 +56,21 @@ def double_connection(check, task):
     return decorator
 
 
-def output_file_descriptor(check, task, ext=None):
+def output_file_descriptor(check, task, ext=None, bin=False):
     def decorator(target_func):
         # filename = lambda: check['result_filename'] + ('.' + ext if ext else '')
-
+        if bin:
+            mode = 'wb'
+        else:
+            mode = 'w'
         @functools.wraps(target_func)
         async def result_func(*args):
             await check.generate_filename(ext)
             if inspect.iscoroutinefunction(target_func):
-                async with aiofiles.open(check.filename, 'w') as fd:
+                async with aiofiles.open(check.filename, mode) as fd:
                     res = await target_func(*args, fd)
             else:
-                fd = await aio.async_run(open, check.result_filename, 'w')
+                fd = await aio.async_run(open, check.result_filename, mode)
                 res = await aio.async_run(target_func, *args, fd)
                 fd.close()
             await check.calc_crc32()
