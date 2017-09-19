@@ -43,7 +43,6 @@ async def run_task(task):
         #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
         proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
         running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
-        break
 
     await aio.aio.wait(running_checks)
     await task.finish()
