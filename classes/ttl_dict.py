@@ -1,6 +1,9 @@
 import collections
 from datetime import datetime, timedelta
 from utils.aio import aio
+from utils import app_log
+
+LOG = app_log.get_logger()
 
 TEN_SECONDS = timedelta(seconds=10)
 
@@ -19,4 +22,5 @@ class TTLDict(collections.UserDict):
     def seek_and_destroy(self):
         for k, v in list(self.data.items()):
             if datetime.now() > v['expires']:
+                LOG.warning('del {}', v['value'])
                 del self[k]
