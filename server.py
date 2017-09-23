@@ -200,6 +200,8 @@ async def memory_log(app):
             if isinstance(obj, LogRecord):
                 lr.append(obj)
         MEM_LOG.info('='*40)
+        MEM_LOG.info('{}', mem_cache['10cdd2f9418958deb52df6b5c073594e058bfeb2'])
+        MEM_LOG.info('='*40)
         MEM_LOG.info('log records {}', len(lr))
         for stat in top_stats[:20]:
             MEM_LOG.info('{}', stat)
