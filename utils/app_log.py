@@ -90,12 +90,12 @@ ACCESS_LOG = get_logger('access')
 
 async def access_log_middleware(app, handler):
     async def _middleware_handler(request):
-        # username = await auth.auth.get_auth(request)
-        peername = request.transport.get_extra_info('peername')
-        if peername is not None:
-            host, port = peername
+        username = await auth.auth.get_auth(request)
+        # peername = request.transport.get_extra_info('peername')
+        # if peername is not None:
+        #     host, port = peername
 
-        ACCESS_LOG.info('{}: {}', request.headers, request)
+        ACCESS_LOG.info('{}: {}', host, request)
         ACCESS_LOG.debug('{!r}', request.get('body'))
 
         response = await handler(request)
