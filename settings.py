@@ -16,6 +16,7 @@ REPOS = {
     "TS": 'git.rosenergo.com:u/konstantinov/SKD/TS',
     "TSIII": 'git.rosenergo.com:u/konstantinov/SKD/TSIII',
     "COMPARE": 'git.rosenergo.com:u/konstantinov/SKD/COMPARE',
-    "BR": 'git.rosenergo.com:u/konstantinov/SKD/BR',
+    "BR": 'git.rosenergo.com:u/lina_che/SKD/BR',
     "NSS": "https://github.com/konstantinov90/NSS_checks", # "git.rosenergo.com:u/konstantinov/SKD/NSS",
+    "DOWNLOADS": 'git.rosenergo.com:u/konstantinov/SKD/DOWNLOADS',
 }

@@ -190,7 +190,7 @@ class OracleConnection(_DBConnection):
     @staticmethod
     def _run_query(curs, query, input_data):
         curs.prepare(query)
-        curs.execute(None, filter_dict(input_data, curs.bindnames))
+        curs.execute(None, filter_dict(input_data, curs.bindnames()))
 
     @staticmethod
     async def _async_run_query(curs, query, input_data):
