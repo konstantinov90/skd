@@ -90,7 +90,10 @@ ACCESS_LOG = get_logger('access')
 
 async def access_log_middleware(app, handler):
     async def _middleware_handler(request):
-        username = await auth.auth.get_auth(request)
+        # username = await auth.auth.get_auth(request)
+        peername = request.transport.get_extra_info('peername')
+        if peername is not None:
+            host, port = peername
 
         ACCESS_LOG.info('{}: {}', username, request)
         ACCESS_LOG.debug('{!r}', request.get('body'))
@@ -101,7 +104,7 @@ async def access_log_middleware(app, handler):
             resp = response.text
         except AttributeError:
             resp = type(response)
-        ACCESS_LOG.debug('{}: {} response: {}', username, request, resp)
+        ACCESS_LOG.debug('{}: {} response: {}', host, request, resp)
         ACCESS_LOG.debug('{}', response.headers)
         return response
 
