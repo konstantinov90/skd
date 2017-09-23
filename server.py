@@ -98,7 +98,7 @@ async def get_last_checks(app):
         for k, v in list(mem_cache.items()):
             tasks.append(aio.aio.ensure_future(get_last_checks_portion(k, v['query'], mem_cache)))
         await aio.aio.wait(tasks)
-        mem_cache.seek_and_destroy()
+        # mem_cache.seek_and_destroy()
 
 
 # @auth.system_required('view')
@@ -109,8 +109,7 @@ async def cached_get_last_checks(request):
     response_hash = request['body'].get('response_hash')
     key = hash_obj(query)
     # print(request['key'])
-    if key not in mem_cache:
-        mem_cache.setdefault(key, {'query': query, 'hash': response_hash})
+    mem_cache.setdefault(key, {'query': query, 'hash': response_hash})
 
     while response_hash == mem_cache[key]['hash'] :
         mem_cache.refresh_item(key)
