@@ -95,7 +95,7 @@ async def access_log_middleware(app, handler):
         if peername is not None:
             host, port = peername
 
-        ACCESS_LOG.info('{}: {}', username, request)
+        ACCESS_LOG.info('{}: {}', host, request)
         ACCESS_LOG.debug('{!r}', request.get('body'))
 
         response = await handler(request)
