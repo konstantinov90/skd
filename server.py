@@ -98,7 +98,7 @@ async def get_last_checks(app):
         for k, v in list(mem_cache.items()):
             tasks.append(aio.aio.ensure_future(get_last_checks_portion(k, v['query'], mem_cache)))
         await aio.aio.wait(tasks)
-        # mem_cache.seek_and_destroy()
+        mem_cache.seek_and_destroy()
 
 
 # @auth.system_required('view')
