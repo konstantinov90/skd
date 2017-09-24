@@ -111,7 +111,7 @@ async def cached_get_last_checks(request):
     # print(request['key'])
     mem_cache.setdefault(key, {'query': query, 'hash': response_hash})
 
-    while response_hash == mem_cache[key]['hash'] :
+    while response_hash == mem_cache[key]['hash'] or 'response' not in mem_cache[key]:
         mem_cache.refresh_item(key)
         await aio.aio.sleep(0.1)
 
