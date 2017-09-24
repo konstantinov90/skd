@@ -87,7 +87,7 @@ async def get_last_checks_portion(key, query, mem_cache):
             check_tmpls_map[check['key_path']].update(check=check)
     response_data = list(check_tmpls_map.values())
     response_hash = hash_obj(response_data)
-    if mem_cache[key]['hash'] != response_hash:
+    if mem_cache[key]['hash'] != response_hash or 'response' not in mem_cache[key]:
         mem_cache[key].update(response=response_data, hash=response_hash)
 
 
