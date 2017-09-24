@@ -113,7 +113,7 @@ def environment(target):
 
                 if len(result) <= 10001:
                     await check.generate_filename('xlsx')
-                    wb = xlsxwriter.Workbook(check.filename)
+                    wb = xlsxwriter.Workbook(check.filename, {'default_date_format': 'dd-mm-yyyy'})
                     sh = wb.add_worksheet(check['name'][:31])
                     for i, row in enumerate(result):
                         # for j, el in enumerate(row):
