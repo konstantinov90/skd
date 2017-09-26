@@ -160,7 +160,7 @@ async def get_archive(request):
         _, ext = os.path.splitext(check['result_filename'])
         out_filename = check['name'] + ext
         msg += '{} {} /{} {}\n'.format(check['result_crc32'], filesize, enc_path, out_filename)
-    return web.Response(text=msg, headers={"X-Archive-Files": "zip"})
+    return web.Response(text=msg, headers={"X-Archive-Files": "zip", "Content-Disposition": "attachment; filename=archive.zip"})
 
 
 async def get_file(request):
