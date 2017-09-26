@@ -143,6 +143,8 @@ def getter(collection):
         else:
             return data
     return route
+#{'system': 'NSS', 'key': {'target_date': datetime.datetime(2017, 1, 29, 0, 0), 'tsid': 221562601, 'database': 'ts_azure'}, 'operation': 'COMMON', 'latest': True}
+#{'system': 'NSS', 'key': {'target_date': datetime.datetime(2017, 1, 29, 0, 0), 'tsid': 221562601, 'database': 'ts_azure'}, 'latest': True, 'operation': 'COMMON'}
 
 async def get_archive(request):
     if request['body']:
@@ -150,8 +152,20 @@ async def get_archive(request):
     else:
         task_id = bson.ObjectId(request.query['task_id'])
     msg = ''
-    async for check in db.checks.find({'task_id': task_id}):
-        if 'finished' not in check or 'result_filename' not in check:
+    (task,) = await db.tasks.find({'_id': task_id}).to_list(None)
+    task['operation'] = task['code']
+    del task['_id']
+    del task['code']
+    del task['sources']
+    del task['started']
+    del task['finished']
+    del task['checks']
+    key = hash_obj(task)
+    LOG.info('archive task {} {}', hash_obj(task), json_util.dumps(request.app['mem_cache'][hash_obj(task)]['response']))
+
+    for check_tmpl in request.app['mem_cache'][key]['response']:
+        check = check_tmpl.get('check')
+        if not check:
             continue
         filepath = os.path.join(settings.CHECK_RESULT_PATH, check['result_filename'])
         fake_filepath = os.path.join('skd/files', check['result_filename'])

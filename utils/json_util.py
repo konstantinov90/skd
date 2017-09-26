@@ -18,9 +18,9 @@ class JSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 if settings.DEBUG:
-    _ENCODER = JSONEncoder(indent=2)
+    _ENCODER = JSONEncoder(indent=2, sort_keys=True)
 else:
-    _ENCODER = JSONEncoder()
+    _ENCODER = JSONEncoder(sort_keys=True)
 
 def uglify(obj, **kwargs):
     return JSONEncoder().encode(obj, **kwargs)
