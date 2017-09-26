@@ -8,6 +8,7 @@ import os.path
 import sys
 import tracemalloc
 import urllib.parse
+import weakref
 
 import aiofiles
 import aiohttp.web as web
@@ -102,6 +103,15 @@ async def get_last_checks(app):
 
 
 # @auth.system_required('view')
+
+def remember_task(handler):
+    async def _handler(request):
+        task = aio.aio.ensure_future(handler(request))
+        request.app['mem_cache_requests'].append(task)
+        return await task
+    return _handler
+
+@remember_task
 async def cached_get_last_checks(request):
     mem_cache = request.app['mem_cache']
 
@@ -224,7 +234,14 @@ async def memory_log(app):
 async def on_shutdown(app):
     LOG.info('server shutting down')
     app['running'] = False
-    await aio.aio.gather(app['mem_log'], app['result_cache'], app['refresher'])
+
+    cancel_task = aio.aio.ensure_future(aio.aio.gather(app['mem_log'], app['result_cache'], app['refresher']))
+
+    for req in app['mem_cache_requests']:
+        if not req.done():
+            req.cancel()
+
+    await cancel_task
 
 
 def init(loop):
@@ -262,6 +279,7 @@ def init(loop):
 
     app['running'] = True
     app['mem_cache'] = TTLDict()
+    app['mem_cache_requests'] = []
     app['refresher'] = aio.aio.ensure_future(cache_manager.Cache().refresher(app))
     app['result_cache'] = aio.aio.ensure_future(get_last_checks(app))
     app['mem_log'] = aio.aio.ensure_future(memory_log(app))
