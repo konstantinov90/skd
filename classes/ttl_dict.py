@@ -74,9 +74,7 @@ class SingleQueryRunner(object):
             self.response = {'data': response_data, 'response_hash': response_hash}
 
             if not self.subscribers:
-                # aio.ensure_future(self.release())
-                self.running = False
-                continue
+                aio.ensure_future(self.release())
             await aio.sleep(0.2)
 
 class T():
