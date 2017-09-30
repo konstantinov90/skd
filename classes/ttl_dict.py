@@ -13,7 +13,7 @@ LOG = app_log.get_logger()
 
 TEN_SECONDS = timedelta(seconds=10)
 
-PROLONG_RUNNER_SECONDS = 15
+PROLONG_RUNNER_SECONDS = 10
 
 def hash_obj(obj):
     dummy = json_util.dumps(obj).encode('utf-8')
