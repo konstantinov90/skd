@@ -100,7 +100,7 @@ class TTLDictNew(object):
         sub = T()
         runner.subscribe(sub)
         while response_hash == runner.response.get('response_hash', response_hash):
-            await aio.sleep(2)
+            await aio.sleep(0.1)
 
         return runner.response
 
