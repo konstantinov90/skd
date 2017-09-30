@@ -13,7 +13,7 @@ LOG = app_log.get_logger()
 
 TEN_SECONDS = timedelta(seconds=10)
 
-PROLONG_RUNNER_SECONDS = 30
+PROLONG_RUNNER_SECONDS = 15
 
 def hash_obj(obj):
     dummy = json_util.dumps(obj).encode('utf-8')
@@ -21,58 +21,75 @@ def hash_obj(obj):
 
 class SingleQueryRunner(object):
     sort_by = (('name', 1), ('extension', 1))
+    project = {'content': 0}
 
     def __init__(self, query):
+        self.checks_tmpls_query = {'system': query['system']}
+        if 'operation' in query:
+            self.checks_tmpls_query.update(operation=query['operation'])
+
         self.query = dict(query)
+        self.query.update(latest=True)
+
         self.task = None
-        self.run()
+        self.response = {}
+        self.subscribers = weakref.WeakSet()
+        self.running = None
+
+    def subscribe(self, sub):
+        # self.subscribers[len(self.subscribers)] = request
+        self.subscribers.add(sub)
+        if len(self.subscribers) == 1:
+            self.run()
+
+    async def release(self):
+        await aio.sleep(PROLONG_RUNNER_SECONDS)
+        if not self.subscribers:
+            self.running = False
 
     def run(self):
         if self.task and not self.task.done():
             LOG.error('this runner\'s {} task is not done!', self)
+            return
         self.task = aio.ensure_future(self.run_query())
 
-    def __call__(self):
-        return self.task
-
     async def run_query(self):
-        LOG.info('getting {}', self.query)
-        checks_tmpls_query = {'system': self.query['system']}
-        if 'operation' in self.query:
-            checks_tmpls_query.update(operation=self.query['operation'])
+        self.running = True
+        while self.running:
+            LOG.info('getting {}', self.query)
 
-        check_tmpls_map = {
-            check_tmpl['key_path']: check_tmpl
-            async for check_tmpl in db.cache.find(
-                checks_tmpls_query, {'content': 0}
-            ).sort(self.sort_by)
-        }
+            check_tmpls_map = {
+                check_tmpl['key_path']: check_tmpl
+                async for check_tmpl in db.cache.find(
+                    self.checks_tmpls_query, self.project
+                ).sort(self.sort_by)
+            }
 
-        self.query.update(latest=True)
-        async for check in db.checks.find(self.query):
-            if check['key_path'] in check_tmpls_map:
-                check_tmpls_map[check['key_path']].update(check=check)
-        response_data = list(check_tmpls_map.values())
-        response_hash = hash_obj(response_data)
-        return {'data': response_data, 'response_hash': response_hash}
+            async for check in db.checks.find(self.query):
+                if check['key_path'] in check_tmpls_map:
+                    check_tmpls_map[check['key_path']].update(check=check)
+            response_data = list(check_tmpls_map.values())
+            response_hash = hash_obj(response_data)
+            self.response = {'data': response_data, 'response_hash': response_hash}
 
+            if not self.subscribers:
+                aio.ensure_future(self.release())
+            await aio.sleep(2)
+
+class T():
+    pass
 
 class TTLDictNew(object):
     def __init__(self):
         self.dct = weakref.WeakValueDictionary({})
 
-    def __getitem__(self, key):
+    def __getitem__(self, item_key):
         """
         get key representing MongoDB query
         return asyncio.Task instance, executing cached query 
         """
-        query, response_hash = key
+        query, response_hash = item_key
         return aio.ensure_future(self._await_query(query, response_hash))
-
-    @staticmethod
-    async def _prolong_runner(runner):
-        LOG.debug('prolonging runner {}', runner)
-        await aio.sleep(PROLONG_RUNNER_SECONDS)
 
     async def _await_query(self, query, response_hash):
         key = json_util.dumps(query)
@@ -80,12 +97,12 @@ class TTLDictNew(object):
         if not runner:
             runner = SingleQueryRunner(query)
             self.dct[key] = runner
-        while response_hash == (await runner())['response_hash']:
-            runner.run()
+        sub = T()
+        runner.subscribe(sub)
+        while response_hash == runner.response.get('response_hash', response_hash):
             await aio.sleep(2)
 
-        aio.ensure_future(self._prolong_runner(runner))
-        return await runner()
+        return runner.response
 
 
 

@@ -111,7 +111,7 @@ def remember_task(handler):
         return await task
     return _handler
 
-@remember_task
+# @remember_task
 async def cached_get_last_checks(request):
     mem_cache = request.app['mem_cache']
 
@@ -282,7 +282,7 @@ def init(loop):
 
     app['running'] = True
     app['mem_cache'] = TTLDictNew()
-    app['mem_cache_requests'] = []
+    # app['mem_cache_requests'] = []
     app['refresher'] = aio.aio.ensure_future(cache_manager.Cache().refresher(app))
     # app['result_cache'] = aio.aio.ensure_future(get_last_checks(app))
     app['mem_log'] = aio.aio.ensure_future(memory_log(app))
