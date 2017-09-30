@@ -95,8 +95,8 @@ async def access_log_middleware(app, handler):
         # if peername is not None:
         #     host, port = peername
 
-        ACCESS_LOG.info('{}: {}', username, request)
-        ACCESS_LOG.debug('{!r}', request.get('body'))
+        # ACCESS_LOG.info('{}: {}', username, request)
+        # ACCESS_LOG.debug('{!r}', request.get('body'))
 
         response = await handler(request)
 
@@ -104,8 +104,8 @@ async def access_log_middleware(app, handler):
             resp = response.text
         except AttributeError:
             resp = type(response)
-        ACCESS_LOG.debug('{}: {} response: {}', username, request, resp)
-        ACCESS_LOG.debug('{}', response.headers)
+        # ACCESS_LOG.debug('{}: {} response: {}', username, request, resp)
+        # ACCESS_LOG.debug('{}', response.headers)
         return response
 
     return _middleware_handler

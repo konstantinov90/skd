@@ -13,14 +13,14 @@ from watchdog.events import PatternMatchingEventHandler
 PROC_NAME = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
 
 class Restarter(PatternMatchingEventHandler):
-    pyt = Popen([PROC_NAME, 'run_server.py'])
+    pyt = Popen([PROC_NAME, 'server.py'])
     def on_modified(self, event):
         super(Restarter, self).on_modified(event)
         what = 'directory' if event.is_directory else 'file'
         logging.info("Modified %s: %s", what, event.src_path)
         self.pyt.terminate()
         logging.info("Python terminated")
-        self.pyt = Popen([PROC_NAME, 'run_server.py'])
+        self.pyt = Popen([PROC_NAME, 'server.py'])
 
 
 if __name__ == "__main__":
