@@ -34,6 +34,9 @@ class SingleQueryRunner(object):
         self.subscribers = weakref.WeakSet()
         self.running = None
 
+    def __del__(self):
+        LOG.debug('{} is destroyed', self)
+
     def subscribe(self, sub):
         """add subscriber to the weak set"""
         self.subscribers.add(sub)
