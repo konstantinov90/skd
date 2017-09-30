@@ -72,7 +72,7 @@ async def receive_task(request):
 def remember_task(handler):
     async def _handler(request):
         task = aio.aio.ensure_future(handler(request))
-        request.app['mem_cache_requests'].append(task)
+        request.app['mem_cache_requests'].add(task)
         return await task
     return _handler
 
@@ -237,7 +237,7 @@ def init(loop):
 
     app['running'] = True
     app['mem_cache'] = TTLDictNew()
-    app['mem_cache_requests'] = []
+    app['mem_cache_requests'] = weakref.WeakSet()
     app['refresher'] = aio.aio.ensure_future(cache_manager.Cache().refresher(app))
     # app['result_cache'] = aio.aio.ensure_future(get_last_checks(app))
     app['mem_log'] = aio.aio.ensure_future(memory_log(app))
