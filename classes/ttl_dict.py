@@ -36,6 +36,7 @@ class SingleQueryRunner(object):
 
     def __del__(self):
         LOG.debug('{} is destroyed', self)
+        self.running = False
 
     def subscribe(self, sub):
         """add subscriber to the weak set"""
