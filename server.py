@@ -76,7 +76,7 @@ def remember_task(handler):
         return await task
     return _handler
 
-# @remember_task
+@remember_task
 async def cached_get_last_checks(request):
     mem_cache = request.app['mem_cache']
 
