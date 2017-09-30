@@ -7,11 +7,9 @@ from utils.aio import aio
 from utils.db_client import db
 from utils import app_log, json_util
 
-
-
 LOG = app_log.get_logger()
 
-TEN_SECONDS = timedelta(seconds=10)
+# TEN_SECONDS = timedelta(seconds=10)
 
 PROLONG_RUNNER_SECONDS = 10
 
@@ -37,26 +35,25 @@ class SingleQueryRunner(object):
         self.running = None
 
     def subscribe(self, sub):
-        # self.subscribers[len(self.subscribers)] = request
+        """add subscriber to the weak set"""
         self.subscribers.add(sub)
         if len(self.subscribers) == 1:
-            self.run()
+            self._run()
 
     async def release(self):
         await aio.sleep(PROLONG_RUNNER_SECONDS)
         if not self.subscribers:
             self.running = False
 
-    def run(self):
+    def _run(self):
         if self.task and not self.task.done():
-            LOG.error('this runner\'s {} task is not done!', self)
             return
-        self.task = aio.ensure_future(self.run_query())
+        self.task = aio.ensure_future(self._run_query())
 
-    async def run_query(self):
+    async def _run_query(self):
         self.running = True
         while self.running:
-            LOG.info('getting {}', self.query)
+            # LOG.info('getting {}', self.query)
 
             check_tmpls_map = {
                 check_tmpl['key_path']: check_tmpl
@@ -105,23 +102,20 @@ class TTLDictNew(object):
         return runner.response
 
 
+# class TTLDict(collections.UserDict):
+#     def __setitem__(self, _key, _value):
+#         value = {'value': _value, 'expires': datetime.now() + TEN_SECONDS}
+#         super().__setitem__(_key, value)
 
+#     def __getitem__(self, key):
+#         return super().__getitem__(key)['value']
 
+#     def refresh_item(self, key):
+#         if key in self:
+#             self.data[key]['expires'] = datetime.now() + TEN_SECONDS
 
-class TTLDict(collections.UserDict):
-    def __setitem__(self, _key, _value):
-        value = {'value': _value, 'expires': datetime.now() + TEN_SECONDS}
-        super().__setitem__(_key, value)
-
-    def __getitem__(self, key):
-        return super().__getitem__(key)['value']
-
-    def refresh_item(self, key):
-        if key in self:
-            self.data[key]['expires'] = datetime.now() + TEN_SECONDS
-
-    def seek_and_destroy(self):
-        for k, v in list(self.data.items()):
-            if datetime.now() > v['expires']:
-                LOG.warning('del {}', v['value'])
-                del self[k]
+#     def seek_and_destroy(self):
+#         for k, v in list(self.data.items()):
+#             if datetime.now() > v['expires']:
+#                 LOG.warning('del {}', v['value'])
+#                 del self[k]

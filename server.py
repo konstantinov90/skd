@@ -21,7 +21,7 @@ from multidict import MultiDict
 
 import skd
 import cache_manager
-from classes.ttl_dict import TTLDict, TTLDictNew
+from classes.ttl_dict import TTLDictNew
 import settings
 from utils import aio, app_log, authorization as auth, json_util
 from utils.db_client import db
