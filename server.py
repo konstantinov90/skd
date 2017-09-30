@@ -67,41 +67,6 @@ async def create_user(request):
 async def receive_task(request):
     return await skd.register_task(request['body'])
 
-# def hash_obj(obj):
-#     dummy = json_util.dumps(obj).encode('utf-8')
-#     return hashlib.sha1(dummy).hexdigest()
-
-# async def get_last_checks_portion(key, query, mem_cache):
-#     LOG.debug('{} getting check {}', key, query)
-
-#     checks_tmpls_query = {'system': query['system']}
-#     sort_by = (('name', 1), ('extension', 1))
-#     if 'operation' in query:
-#         checks_tmpls_query.update(operation=query['operation'])
-
-#     check_tmpls_map = {check_tmpl['key_path']: check_tmpl async for check_tmpl
-#                        in db.cache.find(checks_tmpls_query, {'content': 0}).sort(sort_by)}
-
-#     query['latest'] = True
-#     async for check in db.checks.find(query):
-#         if check['key_path'] in check_tmpls_map:
-#             check_tmpls_map[check['key_path']].update(check=check)
-#     response_data = list(check_tmpls_map.values())
-#     response_hash = hash_obj(response_data)
-#     if mem_cache[key]['hash'] != response_hash or 'response' not in mem_cache[key]:
-#         mem_cache[key].update(response=response_data, hash=response_hash)
-
-
-# async def get_last_checks(app):
-#     mem_cache = app['mem_cache']
-#     while app['running']:
-#         tasks = [aio.aio.sleep(0.5)]
-#         for k, v in list(mem_cache.items()):
-#             tasks.append(aio.aio.ensure_future(get_last_checks_portion(k, v['query'], mem_cache)))
-#         await aio.aio.wait(tasks)
-#         mem_cache.seek_and_destroy()
-
-
 # @auth.system_required('view')
 
 def remember_task(handler):
@@ -118,16 +83,6 @@ async def cached_get_last_checks(request):
     query = request['body']['query']
     response_hash = request['body'].get('response_hash')
     return await mem_cache[query, response_hash]
-    # key = hash_obj(query)
-    # print(request['key'])
-    # mem_cache.setdefault(key, {'query': query, 'hash': response_hash})
-
-    # while response_hash == mem_cache[key]['hash'] or 'response' not in mem_cache[key]:
-    #     mem_cache.refresh_item(key)
-    #     await aio.aio.sleep(0.1)
-
-    # LOG.debug('{}', mem_cache[key])
-    # return {'data': mem_cache[key]['response'], 'response_hash': mem_cache[key]['hash']}
 
 
 def getter(collection):
@@ -240,9 +195,9 @@ async def on_shutdown(app):
         app['refresher'],
     ))
 
-    for req in app['mem_cache_requests']:
-        if not req.done():
-            req.cancel()
+    # for req in app['mem_cache_requests']:
+    #     if not req.done():
+    #         req.cancel()
 
     await cancel_task
 

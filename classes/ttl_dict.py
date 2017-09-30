@@ -74,7 +74,7 @@ class SingleQueryRunner(object):
 
             if not self.subscribers:
                 aio.ensure_future(self.release())
-            await aio.sleep(2)
+            await aio.sleep(0.2)
 
 class T():
     pass
