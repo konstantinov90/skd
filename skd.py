@@ -1,3 +1,4 @@
+import imp
 from operator import attrgetter
 import os
 import os.path
@@ -27,7 +28,7 @@ async def register_task(_task):
     return task.data
 
 def run_check(extension, check, task):
-    from utils import aio
+    imp.reload(aio)
     aio.run(attrgetter(extension)(environment), check, task)
 
 # def run_sql(check, task):
