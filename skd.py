@@ -1,3 +1,4 @@
+from operator import attrgetter
 import os
 import os.path
 import sys
@@ -6,7 +7,7 @@ from subprocess import Popen
 
 from classes import Task, Check
 import settings
-from utils import aio, app_log, json_util
+from utils import aio, app_log, json_util, environment
 from utils.db_client import db
 from utils.environment import py, yml, sql
 
@@ -25,6 +26,18 @@ async def register_task(_task):
     aio.aio.ensure_future(run_task(task))
     return task.data
 
+def run_check(extension, check, task):
+    aio.run(attrgetter(extension)(environment), check, task)
+
+# def run_sql(check, task):
+#     aio.run(environment.sql, check, task)
+
+# def run_yml(check, task):
+#     aio.run(environment.yml, check, task)
+
+# def run_py(check, task):
+#     aio.run(environment.py, check, task)
+
 async def run_task(task):
     running_checks = []
     query = {
@@ -35,14 +48,18 @@ async def run_task(task):
     LOG.info('query {}', query)
     async for _check in db.cache.find(query):
         check = Check(_check)
-        if check['extension'] == 'py':
-            running_checks.append(aio.aio.ensure_future(py(check, task)))
-        elif check['extension'] == 'sql':
-            running_checks.append(aio.aio.ensure_future(sql(check, task)))
-        elif check['extension'] == 'yml':
-            running_checks.append(aio.aio.ensure_future(yml(check, task)))
-        # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
-        # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
+        running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        # if check['extension'] == 'py':
+        #     # running_checks.append(aio.aio.ensure_future(py(check, task)))
+        #     running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
+        # elif check['extension'] == 'sql':
+        #     # running_checks.append(aio.aio.ensure_future(sql(check, task)))
+        #     running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        # elif check['extension'] == 'yml':
+        #     # running_checks.append(aio.aio.ensure_future(yml(check, task)))
+        #     running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(yml, check, task))))
+        # # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
+        # # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
 
     await aio.aio.wait(running_checks)
     await task.finish()

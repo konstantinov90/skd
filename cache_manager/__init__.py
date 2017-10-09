@@ -58,7 +58,7 @@ class Cache(object):
             self.repos[repo_name] = repo
             for operation in repo.tree().trees:
                 if operation.trees:
-                    raise Exception('supposed repo form condition is not met!')
+                    raise Exception('supposed repo form condition is not met! repo:{}'.format(repo))
                 for file in operation.blobs:
                     blob = checks.GitBlobWrapper(repo_name, file)
                     try:
@@ -109,7 +109,7 @@ class Cache(object):
             cmt = repo.commit()
             self.curr_commit[repo_name] = cmt.hexsha
             athr = cmt.author
-            LOG.info('{}by {} ({}) <{}> @ {}', msg, athr.name, athr.committer(), athr.email, athr.summary)
+            LOG.info('{}by {} ({}) <{}> @ {}', msg, athr.name, athr.committer(), athr.email, cmt.summary)
         await db.commit.update({}, self.curr_commit)
         LOG.info('git tick')
 
