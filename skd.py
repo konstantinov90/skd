@@ -8,9 +8,9 @@ from subprocess import Popen
 
 from classes import Task, Check
 import settings
-from utils import aio, app_log, json_util, environment
-from utils.db_client import db
-from utils.environment import py, yml, sql
+from utils import aio, app_log, json_util, environment, db_client
+# from utils.db_client import db
+# from utils.environment import py, yml, sql
 
 LOG = app_log.get_logger()
 PROC_NAME = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
@@ -50,7 +50,7 @@ async def run_task(task):
         '$or': task.get('checks', [{}])
     }
     LOG.info('query {}', query)
-    async for _check in db.cache.find(query):
+    async for _check in db_client.db.cache.find(query):
         check = Check(_check)
         running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
         # if check['extension'] == 'py':
