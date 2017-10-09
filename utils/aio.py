@@ -3,11 +3,11 @@ import concurrent.futures
 
 import settings as S
 
-try:
-    import uvloop
-    aio.set_event_loop_policy(uvloop.EventLoopPolicy())
-except ImportError:
-    pass
+# try:
+#     import uvloop
+#     aio.set_event_loop_policy(uvloop.EventLoopPolicy())
+# except ImportError:
+#     pass
 
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 proc_executor = concurrent.futures.ProcessPoolExecutor()
