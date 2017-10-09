@@ -29,6 +29,7 @@ async def register_task(_task):
 
 def run_check(extension, check, task):
     imp.reload(aio)
+    imp.reload(db)
     imp.reload(environment)
     aio.run(attrgetter(extension)(environment), check, task)
 
