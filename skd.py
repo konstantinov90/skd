@@ -10,7 +10,7 @@ from classes import Task, Check
 import settings
 from utils import aio, app_log, json_util, environment, db_client
 # from utils.db_client import db
-# from utils.environment import py, yml, sql
+from utils.environment import py, yml, sql
 
 LOG = app_log.get_logger()
 PROC_NAME = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
