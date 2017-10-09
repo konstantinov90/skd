@@ -17,13 +17,13 @@ from utils.zip_join import zip_join
 LOG = app_log.get_logger('env')
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
-# def write_xlsx(filename, sheetname, rows):
-#     wb = xlsxwriter.Workbook(filename, {'default_date_format': 'dd-mm-yyyy'})
-#     sh = wb.add_worksheet(sheetname[:31])
-#     for i, row in enumerate(rows):
-#         # for j, el in enumerate(row):
-#         sh.write_row(i, 0, row)
-#     wb.close()
+def write_xlsx(filename, sheetname, rows):
+    wb = xlsxwriter.Workbook(filename, {'default_date_format': 'dd-mm-yyyy'})
+    sh = wb.add_worksheet(sheetname[:31])
+    for i, row in enumerate(rows):
+        # for j, el in enumerate(row):
+        sh.write_row(i, 0, row)
+    wb.close()
 
 def single_connection(check, task):
     def decorator(target_func):
@@ -121,13 +121,13 @@ def environment(target):
 
                 if True or len(result) <= 100001:
                     await check.generate_filename('xlsx')
-                    wb = xlsxwriter.Workbook(check.filename, {'default_date_format': 'dd-mm-yyyy'})
-                    sh = wb.add_worksheet(check['name'][:31])
-                    for i, row in enumerate(result):
-                        # for j, el in enumerate(row):
-                        sh.write_row(i, 0, row)
-                    wb.close()
-                    # await aio.proc_run(write_xlsx, check.filename, check['name'], result)
+                    # wb = xlsxwriter.Workbook(check.filename, {'default_date_format': 'dd-mm-yyyy'})
+                    # sh = wb.add_worksheet(check['name'][:31])
+                    # for i, row in enumerate(result):
+                    #     # for j, el in enumerate(row):
+                    #     sh.write_row(i, 0, row)
+                    # wb.close()
+                    await aio.proc_run(write_xlsx, check.filename, check['name'], result)
                     await check.calc_crc32()
 
                 else:

@@ -1,4 +1,3 @@
-import imp
 from operator import attrgetter
 import os
 import os.path
@@ -54,18 +53,18 @@ async def run_task(task):
     LOG.info('query {}', query)
     async for _check in db_client.db.cache.find(query):
         check = Check(_check)
-        running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
-        # if check['extension'] == 'py':
-        #     # running_checks.append(aio.aio.ensure_future(py(check, task)))
-        #     running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
-        # elif check['extension'] == 'sql':
-        #     # running_checks.append(aio.aio.ensure_future(sql(check, task)))
-        #     running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
-        # elif check['extension'] == 'yml':
-        #     # running_checks.append(aio.aio.ensure_future(yml(check, task)))
-        #     running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(yml, check, task))))
-        # # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
-        # # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
+        # running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        if check['extension'] == 'py':
+            running_checks.append(aio.aio.ensure_future(py(check, task)))
+            # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
+        elif check['extension'] == 'sql':
+            running_checks.append(aio.aio.ensure_future(sql(check, task)))
+            # running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        elif check['extension'] == 'yml':
+            running_checks.append(aio.aio.ensure_future(yml(check, task)))
+            # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(yml, check, task))))
+        # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
+        # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
 
     await aio.aio.wait(running_checks)
     await task.finish()
