@@ -183,7 +183,7 @@ async def memory_log(app):
         MEM_LOG.info('mem cache keys {}', len(list(app['mem_cache'].dct.keys())))
         for stat in top_stats[:10]:
             MEM_LOG.info('{}', stat)
-        await aio.aio.sleep(0.5)
+        await aio.aio.sleep(10)
 
 async def on_shutdown(app):
     LOG.info('server shutting down')
