@@ -20,4 +20,7 @@ async def proc_run(func, *args):
     return await aio.get_event_loop().run_in_executor(proc_executor, func, *args)
 
 def run(coroutine, *args):
+    return aio.get_event_loop().run_until_complete(coroutine(*args))
+
+def loop_run(coroutine, *args):
     return aio.get_event_loop().call_soon(coroutine(*args))
