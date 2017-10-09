@@ -5,6 +5,7 @@ import os.path
 import sys
 import platform
 from subprocess import Popen
+import sys
 
 from classes import Task, Check
 import settings
@@ -29,7 +30,8 @@ async def register_task(_task):
 
 def run_check(extension, check, task):
     # imp.reload(aio)
-    imp.reload(db_client)
+    # imp.reload(db_client)
+    sys.modules.clear()
     imp.reload(environment)
     aio.run(attrgetter(extension)(environment), check, task)
 
