@@ -3,11 +3,11 @@ import concurrent.futures
 
 import settings as S
 
-try:
-    import uvloop
-    aio.set_event_loop_policy(uvloop.EventLoopPolicy())
-except ImportError:
-    pass
+# try:
+#     import uvloop
+#     aio.set_event_loop_policy(uvloop.EventLoopPolicy())
+# except ImportError:
+#     pass
 
 print('new event loop')
 
