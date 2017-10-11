@@ -3,16 +3,19 @@ import collections
 import copy
 import datetime
 
-from utils.db_client import db
+from utils.db_client import get_db
 
 class BaseDict(collections.UserDict):
-    db = db
+    db = get_db()
     collection = 'some_collection'
 
     def __init__(self, dct):
         dct = {k: v for k, v in dct.items() if k not in ('_id', 'started', 'finished')}
         super().__init__(dct)
         self.oid = None
+
+    def set_db(self, db):
+        self.db = db
 
     @property
     def col(self):

@@ -10,7 +10,7 @@ import re
 import aiofiles
 import xlsxwriter
 
-from utils import DB, aio, app_log
+from utils import DB, aio, app_log, db_client
 from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
 
@@ -93,6 +93,8 @@ def environment(target):
         # task = copy.deepcopy(_task)
         await aio.lock.acquire()
 
+        check.set_db(db_client.get_db())
+        
         check.update(
             task_id=task['_id'],
             key=task['key'],

@@ -6,10 +6,11 @@ import aiohttp_auth.auth as auth
 import aiohttp_auth.acl as acl
 from aiohttp_auth.permissions import Permission
 
-from utils.db_client import db
+from utils.db_client import get_db
 
 auth_policy = auth.CookieTktAuthentication(os.urandom(32), 6000000, include_ip=True)
 auth_middleware = auth.auth_middleware(auth_policy)
+db = get_db()
 
 async def acl_group_callback(usr):
     try:

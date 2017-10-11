@@ -4,10 +4,12 @@ import hashlib
 import weakref
 
 from utils.aio import aio
-from utils.db_client import db
+from utils.db_client import get_db
 from utils import app_log, json_util
 
 LOG = app_log.get_logger()
+
+db = get_db()
 
 # TEN_SECONDS = timedelta(seconds=10)
 

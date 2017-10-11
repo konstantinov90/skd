@@ -1,3 +1,4 @@
+import imp
 from operator import attrgetter
 import os
 import os.path
@@ -14,6 +15,7 @@ from utils.environment import py, yml, sql
 
 LOG = app_log.get_logger()
 PROC_NAME = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
+db = db_client.get_db()
 
 def init(path):
     if not os.path.isdir(path):
@@ -29,7 +31,7 @@ async def register_task(_task):
 
 def run_check(extension, check, task):
     imp.reload(aio)
-    imp.reload(db_client)
+    # imp.reload(db_client)
     # sys.modules.clear()
     # imp.reload(environment)
     aio.run(attrgetter(extension)(environment), check, task)
@@ -51,17 +53,17 @@ async def run_task(task):
         '$or': task.get('checks', [{}])
     }
     LOG.info('query {}', query)
-    async for _check in db_client.db.cache.find(query):
+    async for _check in db.cache.find(query):
         check = Check(_check)
-        # running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
-        if check['extension'] == 'py':
-            running_checks.append(aio.aio.ensure_future(py(check, task)))
-            # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
-        elif check['extension'] == 'sql':
-            running_checks.append(aio.aio.ensure_future(sql(check, task)))
-            # running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
-        elif check['extension'] == 'yml':
-            running_checks.append(aio.aio.ensure_future(yml(check, task)))
+        running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        # if check['extension'] == 'py':
+        #     running_checks.append(aio.aio.ensure_future(py(check, task)))
+        #     # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
+        # elif check['extension'] == 'sql':
+        #     running_checks.append(aio.aio.ensure_future(sql(check, task)))
+        #     # running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        # elif check['extension'] == 'yml':
+        #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
             # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(yml, check, task))))
         # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
         # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))

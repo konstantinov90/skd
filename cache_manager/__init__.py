@@ -8,11 +8,13 @@ import git
 import settings as S
 from utils import aio
 from utils import app_log
-from utils.db_client import db
+from utils.db_client import get_db
 from . import checks
 from . import kerberos_auth
 
 LOG = app_log.get_logger()
+
+db = get_db()
 
 # db.commit.remove()
 
