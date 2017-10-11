@@ -93,8 +93,8 @@ def environment(target):
         # task = copy.deepcopy(_task)
         await aio.lock.acquire()
 
-        check.set_db(db_client.get_db())
-        
+        check.set_db(db_client.get_db(aio.aio.get_event_loop()))
+
         check.update(
             task_id=task['_id'],
             key=task['key'],
