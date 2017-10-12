@@ -14,6 +14,8 @@ from utils import DB, aio, app_log, db_client
 from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
 
+import settings
+
 LOG = app_log.get_logger('env')
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
@@ -96,7 +98,8 @@ def environment(target):
         LOG.info('hello env2')
 
 
-        db = db_client.get_db(loop)
+        # db = db_client.get_db(loop)
+        db = motor.AsyncIOMotorClient(settings.DATABASE, io_loop=loop).get_default_database()
         check.set_db(db)
 
         print(await db.checks.find_one({'system': 'NSS'}))
