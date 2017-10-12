@@ -164,7 +164,6 @@ def environment(target):
         # update на время, когда выполнилась проверка
         # await check.finish(result=logical_result)
         # aio.lock.release()
-        LOG.info('result {}', logical_result)
         return logical_result
 
     return decorated_func
