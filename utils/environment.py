@@ -71,6 +71,7 @@ def double_connection(check, task):
 def output_file_descriptor(check, task, ext=None, bin=False):
     def decorator(target_func):
         # filename = lambda: check['result_filename'] + ('.' + ext if ext else '')
+        LOG.info('doc {}', target_func.__doc__)
         if bin:
             mode = 'wb'
         else:
