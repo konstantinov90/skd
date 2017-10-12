@@ -33,7 +33,7 @@ def single_connection(check, task):
     def decorator(target_func):
         @functools.wraps(target_func)
         async def result_func(*args):
-            LOG.info(f'{check}')
+            LOG.info('{}', str(check))
             (con_data,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
                 con = await DB.OracleConnection.get(*get_ora_con_str(con_data))
