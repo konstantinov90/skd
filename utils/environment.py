@@ -76,7 +76,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
         else:
             mode = 'w'
         if ext:
-            aio.aio.get_event_loop().call_soon(check.put(result_extension=ext))
+            aio.aio.get_event_loop().call_soon_threadsafe(check.put(result_extension=ext))
         @functools.wraps(target_func)
         async def result_func(*args):
             if inspect.iscoroutinefunction(target_func):
