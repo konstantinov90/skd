@@ -36,7 +36,6 @@ def single_connection(check, task):
             (con_data,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
                 con = await DB.OracleConnection.get(*get_ora_con_str(con_data))
-                LOG.info('{}', con)
                 return await target_func(*args, con, con_data['ops'])
             else:
                 con = DB.OracleConnection(*get_ora_con_str(con_data))
@@ -96,10 +95,8 @@ def output_file_descriptor(check, task, ext=None, bin=False):
 def environment(target):
     async def decorated_func(check, task, cached_code):
         # task = copy.deepcopy(_task)
-        LOG.info('hello env')
         imp.reload(aio)
         await aio.lock.acquire()
-        LOG.info('hello env2 {}', id(aio.aio.get_event_loop()))
 
         # imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
@@ -120,7 +117,6 @@ def environment(target):
 
         try:
             result = await target(cached_code, check, task)
-            LOG.info('hello env3')
             if isinstance(result, abc.Sequence) and not isinstance(result, str):
                 # deconstruct complex result
                 if result and isinstance(result[0], bool) or result[0] is None:
