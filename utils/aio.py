@@ -28,4 +28,5 @@ def run(coroutine, *args):
     return aio.get_event_loop().run_until_complete(coroutine(*args))
 
 def loop_run(coroutine, *args):
-    aio.new_event_loop().run_until_complete(coroutine(*args))
+    loop = aio.new_event_loop()
+    loop.run_until_complete(coroutine(*args, loop=loop))

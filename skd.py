@@ -30,11 +30,11 @@ async def register_task(_task):
     return task.data
 
 def run_check(extension, check, task):
-    imp.reload(aio)
+    # imp.reload(aio)
     # imp.reload(db_client)
     # sys.modules.clear()
     # imp.reload(environment)
-    aio.run(attrgetter(extension)(environment), check, task)
+    aio.loop_run(attrgetter(extension)(environment), check, task)
 
 # def run_sql(check, task):
 #     aio.run(environment.sql, check, task)

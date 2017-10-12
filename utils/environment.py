@@ -89,11 +89,11 @@ def output_file_descriptor(check, task, ext=None, bin=False):
 
 
 def environment(target):
-    async def decorated_func(check, task):
+    async def decorated_func(check, task, loop):
         # task = copy.deepcopy(_task)
         await aio.lock.acquire()
 
-        check.set_db(db_client.get_db(aio.aio.get_event_loop()))
+        check.set_db(db_client.get_db(loop))
 
         check.update(
             task_id=task['_id'],
@@ -123,13 +123,13 @@ def environment(target):
 
                 if True or len(result) <= 100001:
                     await check.generate_filename('xlsx')
-                    # wb = xlsxwriter.Workbook(check.filename, {'default_date_format': 'dd-mm-yyyy'})
-                    # sh = wb.add_worksheet(check['name'][:31])
-                    # for i, row in enumerate(result):
-                    #     # for j, el in enumerate(row):
-                    #     sh.write_row(i, 0, row)
-                    # wb.close()
-                    await aio.proc_run(write_xlsx, check.filename, check['name'], result)
+                    wb = xlsxwriter.Workbook(check.filename, {'default_date_format': 'dd-mm-yyyy'})
+                    sh = wb.add_worksheet(check['name'][:31])
+                    for i, row in enumerate(result):
+                        # for j, el in enumerate(row):
+                        sh.write_row(i, 0, row)
+                    wb.close()
+                    # await aio.proc_run(write_xlsx, check.filename, check['name'], result)
                     await check.calc_crc32()
 
                 else:
@@ -171,9 +171,9 @@ async def py(cached_code, check, task):
     except Exception as exc:
         raise exc
 
-async def sql(check, task):
+async def sql(check, task, loop):
     check['type'] = 'LOGICAL'
-    await yml(check, task)
+    await yml(check, task, loop)
 
 @environment
 async def yml(query, check, task):
