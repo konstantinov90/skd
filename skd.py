@@ -39,7 +39,7 @@ async def run_check(extension, check, task):
     cached_code = check.pop('content')
     await check.save()
     await check.generate_filename('xlsx')
-    result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
+    result = run_check_process(check['extension'], check, task, cached_code)
     await check.finish(result=result)
     await check.calc_crc32()
 
