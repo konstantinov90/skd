@@ -176,11 +176,12 @@ async def py(cached_code, check, task):
     LOG.info('{}', cached_code)
     try:
         logging_cached_code = re.sub('print((.*))', r'print(\1, check_id="{}")'.format(check['_id']), cached_code)
-        LOG.info('{}', logging_cached_code)
+        
         # logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))
 
         func = locals()['run_check']
+        LOG.info(f'{func}')
         ans = await func()
         LOG.info(f'{ans}')
         return ans
