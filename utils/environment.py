@@ -98,7 +98,7 @@ def environment(target):
     async def decorated_func(check, task, cached_code):
         # task = copy.deepcopy(_task)
         imp.reload(aio)
-        await aio.lock.acquire()
+        # await aio.lock.acquire()
 
         # imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
@@ -163,7 +163,8 @@ def environment(target):
 
         # update на время, когда выполнилась проверка
         # await check.finish(result=logical_result)
-        aio.lock.release()
+        # aio.lock.release()
+        LOG.info('result {}', logical_result)
         return logical_result
 
     return decorated_func
