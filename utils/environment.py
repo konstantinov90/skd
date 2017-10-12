@@ -15,7 +15,8 @@ from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
 
 import settings
-import motor.motor_asyncio as motor
+import motor.motor_asyncio
+import imp
 
 LOG = app_log.get_logger('env')
 get_ora_con_str = itemgetter('login', 'password', 'db')
@@ -96,14 +97,14 @@ def environment(target):
         # task = copy.deepcopy(_task)
         LOG.info('hello env')
         await aio.lock.acquire()
-        LOG.info('hello env2')
+        LOG.info('hello env2', loop=aio.aio.get_event_loop())
 
-
+        imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
-        # db = motor.AsyncIOMotorClient(settings.DATABASE, io_loop=loop).get_default_database()
+        db = motor.motor_asyncio.AsyncIOMotorClient(settings.DATABASE, io_loop=loop).get_default_database()
         # check.set_db(db)
 
-        print(await check.db.checks.find_one({'system': 'NSS'}))
+        print(await db.checks.find_one({'system': 'NSS'}))
         LOG.info('hello env3')
 
         check.update(
