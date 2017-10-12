@@ -118,7 +118,7 @@ def environment(target):
 
         try:
             result = await target(cached_code, check, task)
-
+            LOG.info('hello env3')
             if isinstance(result, abc.Sequence) and not isinstance(result, str):
                 # deconstruct complex result
                 if result and isinstance(result[0], bool) or result[0] is None:
