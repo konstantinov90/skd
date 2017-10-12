@@ -78,7 +78,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
         if ext:
             target_func.__doc__ = """result_extension: {}
 {}""".format(ext, target_func.__doc__ or '')
-            aio.aio.get_event_loop().call_soon_threadsafe(check.put(result_extension=ext))
+            check['result_extension'] = ext
         @functools.wraps(target_func)
         async def result_func(*args):
             if inspect.iscoroutinefunction(target_func):
@@ -91,7 +91,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
                 finally:
                     fd.close()
             return res
-
+        LOG.info('{}', result_func.__doc__)
         return result_func
     return decorator
 
