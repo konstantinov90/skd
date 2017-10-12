@@ -93,8 +93,10 @@ def environment(target):
         # task = copy.deepcopy(_task)
         LOG.info('hello env')
         await aio.lock.acquire()
+        LOG.info('hello env2')
 
         check.set_db(db_client.get_db(loop))
+        LOG.info('hello env3')
 
         check.update(
             task_id=task['_id'],
@@ -103,6 +105,7 @@ def environment(target):
         )
         cached_code = check.pop('content')
         await check.save()
+        LOG.info('hello env4')
 
         try:
             result = await target(cached_code, check, task)
