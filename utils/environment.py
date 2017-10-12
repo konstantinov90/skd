@@ -76,7 +76,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
         else:
             mode = 'w'
         if ext:
-            target_func.__doc__ = "result_extension: {}{}".format(ext, f'\n{target_func.__doc__}' or '')
+            target_func.__doc__ = "result_extension: {}\n{}".format(ext, target_func.__doc__ or '')
 
         @functools.wraps(target_func)
         async def result_func(*args):
