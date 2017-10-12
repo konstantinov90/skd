@@ -118,6 +118,7 @@ class PyCheck(Check):
             pass
         else:
             func = locals()['run_check']
+            print(func.__doc__)
             self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
             if isinstance(self.meta, str):
                 self.meta = {'meta': self.meta}
