@@ -84,8 +84,10 @@ def output_file_descriptor(check, task, ext=None, bin=False):
                     res = await target_func(*args, fd)
             else:
                 fd = await aio.async_run(open, check.filename, mode)
-                res = await aio.async_run(target_func, *args, fd)
-                fd.close()
+                try:
+                    res = await aio.async_run(target_func, *args, fd)
+                finally:
+                    fd.close()
             return res
 
         return result_func
