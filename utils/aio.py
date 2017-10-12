@@ -19,7 +19,9 @@ proc_executor = concurrent.futures.ProcessPoolExecutor(1)
 lock = aio.Semaphore(S.MAX_CONCURRENT_CHECKS)
 
 async def async_run(func, *args):
-    return await aio.get_event_loop().run_in_executor(executor, func, *args)
+    loop = aio.get_event_loop()
+    print('async run', id(loop))
+    return await loop.run_in_executor(executor, func, *args)
 
 async def proc_run(func, *args):
     return await aio.get_event_loop().run_in_executor(proc_executor, func, *args)
