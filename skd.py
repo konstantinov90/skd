@@ -29,12 +29,27 @@ async def register_task(_task):
     aio.aio.ensure_future(run_task(task))
     return task.data
 
-def run_check(extension, check, task):
+
+async def run_check(extension, check, task):
+    check.update(
+        task_id=task['_id'],
+        key=task['key'],
+        started=datetime.datetime.now()
+    )
+    cached_code = check.pop('content')
+    await check.save()
+    await check.generate_filename('xlsx')
+    result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
+    await check.finish(result=result)
+    await check.calc_crc32()
+
+def run_check_process(extension, check, task, cached_code):
     # imp.reload(aio)
     # imp.reload(db_client)
     # sys.modules.clear()
     # imp.reload(environment)
-    aio.loop_run(attrgetter(extension)(environment), check, task)
+    
+    return aio.loop_run(attrgetter(extension)(environment), check, task, cached_code)
 
 # def run_sql(check, task):
 #     aio.run(environment.sql, check, task)

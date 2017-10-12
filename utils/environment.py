@@ -93,7 +93,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
 
 
 def environment(target):
-    async def decorated_func(check, task, loop):
+    async def decorated_func(check, task, cached_code):
         # task = copy.deepcopy(_task)
         LOG.info('hello env')
         await aio.lock.acquire()
@@ -107,13 +107,13 @@ def environment(target):
         print(loop.call_soon_threadsafe(db.checks.find_one, {'system': 'NSS'}), '_id')
         LOG.info('hello env3')
 
-        check.update(
-            task_id=task['_id'],
-            key=task['key'],
-            started=datetime.datetime.now()
-        )
-        cached_code = check.pop('content')
-        loop.call_soon_threadsafe(check.save)
+        # check.update(
+        #     task_id=task['_id'],
+        #     key=task['key'],
+        #     started=datetime.datetime.now()
+        # )
+        # cached_code = check.pop('content')
+        # loop.call_soon_threadsafe(check.save)
         LOG.info('hello env4')
 
         try:
@@ -128,14 +128,14 @@ def environment(target):
                 else:
                     logical_result = None
                 # then save the fuck out of it!
-                if 'result_filename' in check:
+                if '@output_file_descriptor' in check:
                     raise Exception('cannot save file twice!')
 
                 # if len(result) > 10000:
                 #     result = [('Слишком много записей, вывожу 10000 строк',)] + result[:10000]
 
                 if True or len(result) <= 100001:
-                    await check.generate_filename('xlsx')
+                    # await check.generate_filename('xlsx')
                     wb = xlsxwriter.Workbook(check.filename, {'default_date_format': 'dd-mm-yyyy'})
                     sh = wb.add_worksheet(check['name'][:31])
                     for i, row in enumerate(result):
@@ -143,7 +143,7 @@ def environment(target):
                         sh.write_row(i, 0, row)
                     wb.close()
                     # await aio.proc_run(write_xlsx, check.filename, check['name'], result)
-                    await check.calc_crc32()
+                    # await check.calc_crc32()
 
                 else:
                     await check.generate_filename('csv')
@@ -162,8 +162,9 @@ def environment(target):
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
-        await check.finish(result=logical_result)
+        # await check.finish(result=logical_result)
         aio.lock.release()
+        return logical_result
 
     return decorated_func
 
