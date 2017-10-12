@@ -15,7 +15,7 @@ from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
 
 import settings
-import motor
+import motor.motor_asyncio as motor
 
 LOG = app_log.get_logger('env')
 get_ora_con_str = itemgetter('login', 'password', 'db')
