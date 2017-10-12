@@ -20,9 +20,7 @@ lock = aio.Semaphore(S.MAX_CONCURRENT_CHECKS)
 
 async def async_run(func, *args):
     loop = aio.get_event_loop()
-    print('async run', id(loop), id(executor))
     res = await loop.run_in_executor(executor, func, *args)
-    print('async run res', res)
     return res
 
 async def proc_run(func, *args):
@@ -33,5 +31,4 @@ def run(coroutine, *args):
 
 def loop_run(coroutine, *args):
     loop = aio.new_event_loop()
-    print(id(loop))
     return loop.run_until_complete(coroutine(*args))
