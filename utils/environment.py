@@ -31,6 +31,7 @@ def write_xlsx(filename, sheetname, rows):
 
 def single_connection(check, task):
     def decorator(target_func):
+        LOG.info(f'{check}')
         @functools.wraps(target_func)
         async def result_func(*args):
             (con_data,) = task['sources']
