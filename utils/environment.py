@@ -98,7 +98,6 @@ def environment(target):
         LOG.info('hello env')
         await aio.lock.acquire()
         LOG.info('hello env2')
-        LOG.info('{}', cached_code)
 
         # imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
@@ -182,6 +181,7 @@ async def py(cached_code, check, task):
 
         func = locals()['run_check']
         ans = await func()
+        LOG.info(f'{ans}')
         return ans
     except Exception as exc:
         raise exc
