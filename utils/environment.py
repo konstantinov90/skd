@@ -97,7 +97,7 @@ def environment(target):
         # task = copy.deepcopy(_task)
         LOG.info('hello env')
         await aio.lock.acquire()
-        LOG.info('hello env2', loop=aio.aio.get_event_loop())
+        LOG.info('hello env2 {}', loop==aio.aio.get_event_loop())
 
         imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
