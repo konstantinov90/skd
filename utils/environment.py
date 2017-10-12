@@ -99,13 +99,13 @@ def environment(target):
         await aio.lock.acquire()
         LOG.info('hello env2 {}', loop==aio.aio.get_event_loop())
 
-        imp.reload(motor.motor_asyncio)
+        # imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
-        db = motor.motor_asyncio.AsyncIOMotorClient(settings.DATABASE, io_loop=loop).get_default_database()
+        # db = motor.motor_asyncio.AsyncIOMotorClient(settings.DATABASE, io_loop=loop).get_default_database()
         # check.set_db(db)
 
-        print(loop.call_soon_threadsafe(db.checks.find_one, {'system': 'NSS'}), '_id')
-        LOG.info('hello env3')
+        # print(loop.call_soon_threadsafe(db.checks.find_one, {'system': 'NSS'}), '_id')
+        # LOG.info('hello env3')
 
         # check.update(
         #     task_id=task['_id'],
@@ -114,7 +114,7 @@ def environment(target):
         # )
         # cached_code = check.pop('content')
         # loop.call_soon_threadsafe(check.save)
-        LOG.info('hello env4')
+        # LOG.info('hello env4')
 
         try:
             result = await target(cached_code, check, task)
