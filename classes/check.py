@@ -10,11 +10,6 @@ _BASE16 = 2**32
 
 class Check(BaseDict):
     collection = 'checks'
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.out_filename = '{}_{}_{}_{}.{}'.format(
-            self['task_id'], *at('system', 'operation', 'name', 'extension')(self)
-        )
 
     async def save(self):
         self['latest'] = True
@@ -31,7 +26,11 @@ class Check(BaseDict):
     @property
     def filename(self):
         try:
-            _filename = '{}.{}'.format(self.out_filename, self.get('result_extension', 'xlsx'))
+            _filename = '{}_{}_{}_{}.{}.{}'.format(
+                self['task_id'],
+                *at('system', 'operation', 'name', 'extension')(self),
+                self.get('result_extension', 'xlsx'),
+            )
         except KeyError:
             return
         return os.path.join(settings.CHECK_RESULT_PATH, _filename)
