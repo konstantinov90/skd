@@ -39,7 +39,7 @@ async def run_check(extension, check, task):
     cached_code = check.pop('content')
     await check.save()
     await check.generate_filename('xlsx')
-    result = run_check_process(check['extension'], check, task, cached_code)
+    result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
     await check.finish(result=result)
     await check.calc_crc32()
 
@@ -70,7 +70,7 @@ async def run_task(task):
     LOG.info('query {}', query)
     async for _check in db.cache.find(query):
         check = Check(_check)
-        running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
+        running_checks.append(aio.aio.ensure_future(run_check(check['extension'], check, task)))
         # if check['extension'] == 'py':
         #     running_checks.append(aio.aio.ensure_future(py(check, task)))
         #     # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
