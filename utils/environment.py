@@ -98,6 +98,7 @@ def environment(target):
         LOG.info('hello env')
         await aio.lock.acquire()
         LOG.info('hello env2')
+        LOG.info('{}', cached_code)
 
         # imp.reload(motor.motor_asyncio)
         # db = db_client.get_db(loop)
