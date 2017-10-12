@@ -128,7 +128,7 @@ def environment(target):
                 else:
                     logical_result = None
                 # then save the fuck out of it!
-                if '@output_file_descriptor' in check:
+                if '@output_file_descriptor' in cached_code:
                     raise Exception('cannot save file twice!')
 
                 # if len(result) > 10000:
