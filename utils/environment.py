@@ -95,7 +95,11 @@ def environment(target):
         await aio.lock.acquire()
         LOG.info('hello env2')
 
-        check.set_db(db_client.get_db(loop))
+
+        db = db_client.get_db(loop)
+        check.set_db(db)
+
+        print(await db.checks.find_one({'system': 'NSS'}))
         LOG.info('hello env3')
 
         check.update(
