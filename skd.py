@@ -41,7 +41,7 @@ async def run_check(extension, check, task):
     await check.save()
     result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
     await check.finish(result=result)
-    print(check.filename)
+    print(result)
     if os.path.isfile(check.filename):
         await check.put(result_filename=check.rel_filename)
         await check.calc_crc32()
@@ -52,8 +52,7 @@ def run_check_process(extension, check, task, cached_code):
     # sys.modules.clear()
     # imp.reload(environment)
     
-    res = aio.loop_run(attrgetter(extension)(environment), check, task, cached_code)
-    return res
+    return aio.loop_run(attrgetter(extension)(environment), check, task, cached_code)
 
 # def run_sql(check, task):
 #     aio.run(environment.sql, check, task)
