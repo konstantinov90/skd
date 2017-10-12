@@ -24,7 +24,7 @@ class Check(BaseDict):
         await super().save()
 
     @property
-    def rel_filename(self)
+    def rel_filename(self):
         return '{}_{}_{}_{}.{}.{}'.format(
             self['task_id'],
             *at('system', 'operation', 'name', 'extension')(self),
