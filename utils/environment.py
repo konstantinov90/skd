@@ -104,7 +104,7 @@ def environment(target):
         db = motor.motor_asyncio.AsyncIOMotorClient(settings.DATABASE, io_loop=loop).get_default_database()
         # check.set_db(db)
 
-        print(db.checks.find_one({'system': 'NSS'}))
+        print(db.checks.find_one({'system': 'NSS'}), check['_id'])
         LOG.info('hello env3')
 
         check.update(
