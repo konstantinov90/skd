@@ -97,6 +97,7 @@ def environment(target):
     async def decorated_func(check, task, cached_code):
         # task = copy.deepcopy(_task)
         LOG.info('hello env')
+        imp.reload(aio)
         await aio.lock.acquire()
         LOG.info('hello env2 {}', id(aio.aio.get_event_loop()))
 
