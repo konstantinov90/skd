@@ -53,7 +53,6 @@ def run_check_process(extension, check, task, cached_code):
     # imp.reload(environment)
     
     res = aio.loop_run(attrgetter(extension)(environment), check, task, cached_code)
-    LOG.info('result new {}', res)
     return res
 
 # def run_sql(check, task):

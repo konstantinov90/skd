@@ -31,4 +31,6 @@ def run(coroutine, *args):
 
 def loop_run(coroutine, *args):
     loop = aio.new_event_loop()
-    return loop.run_until_complete(coroutine(*args))
+    res = loop.run_until_complete(coroutine(*args))
+    print('result', res)
+    return res
