@@ -43,7 +43,7 @@ async def run_check(extension, check, task):
     await check.finish(result=result)
     print(check.filename)
     if os.path.isfile(check.filename):
-        await check.put(result_filename=check.filename)
+        await check.put(result_filename=check.rel_filename)
         await check.calc_crc32()
 
 def run_check_process(extension, check, task, cached_code):

@@ -76,9 +76,8 @@ def output_file_descriptor(check, task, ext=None, bin=False):
         else:
             mode = 'w'
         if ext:
-            target_func.__doc__ = """result_extension: {}
-{}""".format(ext, target_func.__doc__ or '')
-            check['result_extension'] = ext
+            target_func.__doc__ = "result_extension: {}{}".format(ext, f'\n{target_func.__doc__}' or '')
+
         @functools.wraps(target_func)
         async def result_func(*args):
             if inspect.iscoroutinefunction(target_func):
@@ -91,7 +90,6 @@ def output_file_descriptor(check, task, ext=None, bin=False):
                 finally:
                     fd.close()
             return res
-        LOG.info('{}', result_func.__doc__)
         return result_func
     return decorator
 

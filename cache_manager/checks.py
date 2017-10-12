@@ -118,7 +118,6 @@ class PyCheck(Check):
             LOG.error('error compiling func')
         else:
             func = locals()['run_check']
-            LOG.info('func doc {}', func.__doc__)
             self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
             if isinstance(self.meta, str):
                 self.meta = {'meta': self.meta}

@@ -24,13 +24,17 @@ class Check(BaseDict):
         await super().save()
 
     @property
+    def rel_filename(self)
+        return '{}_{}_{}_{}.{}.{}'.format(
+            self['task_id'],
+            *at('system', 'operation', 'name', 'extension')(self),
+            self.get('result_extension', 'xlsx'),
+        )
+
+    @property
     def filename(self):
         try:
-            _filename = '{}_{}_{}_{}.{}.{}'.format(
-                self['task_id'],
-                *at('system', 'operation', 'name', 'extension')(self),
-                self.get('result_extension', 'xlsx'),
-            )
+            _filename = self.rel_filename
         except KeyError:
             return
         return os.path.join(settings.CHECK_RESULT_PATH, _filename)
