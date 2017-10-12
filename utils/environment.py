@@ -113,7 +113,7 @@ def environment(target):
             started=datetime.datetime.now()
         )
         cached_code = check.pop('content')
-        await check.save()
+        loop.call_soon_threadsafe(check.save)
         LOG.info('hello env4')
 
         try:
