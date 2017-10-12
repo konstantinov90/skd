@@ -164,8 +164,7 @@ def environment(target):
         # update на время, когда выполнилась проверка
         # await check.finish(result=logical_result)
         # aio.lock.release()
-        LOG.info('result is {}', logical_result)
-        return int(logical_result) if isinstance(logical_result, bool) else logical_result
+        return logical_result
 
     return decorated_func
 
@@ -188,7 +187,7 @@ async def py(cached_code, check, task):
 
 async def sql(check, task, loop):
     check['type'] = 'LOGICAL'
-    await yml(check, task, loop)
+    return await yml(check, task, loop)
 
 @environment
 async def yml(query, check, task):

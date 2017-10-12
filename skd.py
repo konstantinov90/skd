@@ -41,7 +41,6 @@ async def run_check(extension, check, task):
     await check.save()
     result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
     await check.finish(result=result)
-    print(result)
     if os.path.isfile(check.filename):
         await check.put(result_filename=check.rel_filename)
         await check.calc_crc32()
