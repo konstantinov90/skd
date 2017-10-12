@@ -91,6 +91,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
 def environment(target):
     async def decorated_func(check, task, loop):
         # task = copy.deepcopy(_task)
+        LOG.info('hello env')
         await aio.lock.acquire()
 
         check.set_db(db_client.get_db(loop))
