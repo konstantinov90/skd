@@ -9,8 +9,6 @@ import settings as S
 # except ImportError:
 #     pass
 
-print('new event loop')
-
 policy = aio.get_event_loop_policy()
 policy.set_event_loop(policy.new_event_loop())
 
