@@ -115,7 +115,7 @@ class PyCheck(Check):
             comp = await aio.async_run(compile, self.content, '<string>', 'single')
             exec(comp)
         except Exception:
-            pass
+            LOG.error('error compiling func')
         else:
             func = locals()['run_check']
             LOG.info('func doc {}', func.__doc__)
