@@ -75,10 +75,10 @@ def output_file_descriptor(check, task, ext=None, bin=False):
             mode = 'wb'
         else:
             mode = 'w'
+        if ext:
+            check['result_extension'] = ext
         @functools.wraps(target_func)
         async def result_func(*args):
-            if ext:
-                check['result_extension'] = ext
             if inspect.iscoroutinefunction(target_func):
                 async with aiofiles.open(check.filename, mode) as fd:
                     res = await target_func(*args, fd)
