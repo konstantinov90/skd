@@ -15,7 +15,7 @@ policy = aio.get_event_loop_policy()
 policy.set_event_loop(policy.new_event_loop())
 
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-proc_executor = concurrent.futures.ProcessPoolExecutor()
+proc_executor = concurrent.futures.ProcessPoolExecutor(1)
 lock = aio.Semaphore(S.MAX_CONCURRENT_CHECKS)
 
 async def async_run(func, *args):
