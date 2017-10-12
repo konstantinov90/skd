@@ -174,7 +174,7 @@ def print(msg, check_id):
 
 @environment
 async def py(cached_code, check, task):
-
+    LOG.info('{}', cached_code)
     try:
         logging_cached_code = re.sub('print((.*))', r'print(\1, check_id="{}")'.format(check['_id']), cached_code)
         # logging_cached_code = cached_code
