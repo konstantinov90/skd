@@ -66,7 +66,7 @@ async def run_task(task):
     running_checks = []
     query = {
         'system': task['system'],
-        'operation': task['code'],
+        'operation': task['operation'],
         '$or': task.get('checks', [{}])
     }
     LOG.info('query {}', query)
