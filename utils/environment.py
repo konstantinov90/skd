@@ -68,7 +68,7 @@ def output_file_descriptor(check, task, ext=None, bin=False):
         else:
             mode = 'w'
         if ext:
-            target_func.__doc__ = f"""result_extension: {ext}
+            target_func.__doc__ = f"""{f'result_extension: {ext}' if ext}
 output_file_descriptor: True
 {target_func.__doc__ or ''}"""
 
