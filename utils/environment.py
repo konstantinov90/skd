@@ -21,14 +21,6 @@ import imp
 LOG = app_log.get_logger('env')
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
-def write_xlsx(filename, sheetname, rows):
-    wb = xlsxwriter.Workbook(filename, {'default_date_format': 'dd-mm-yyyy'})
-    sh = wb.add_worksheet(sheetname[:31])
-    for i, row in enumerate(rows):
-        # for j, el in enumerate(row):
-        sh.write_row(i, 0, row)
-    wb.close()
-
 def single_connection(check, task):
     def decorator(target_func):
         @functools.wraps(target_func)
@@ -76,7 +68,8 @@ def output_file_descriptor(check, task, ext=None, bin=False):
         else:
             mode = 'w'
         if ext:
-            target_func.__doc__ = "result_extension: {}\n{}".format(ext, target_func.__doc__ or '')
+            target_func.__doc__ = f"""result_extension: {ext}
+output_file_descriptor: True{'\n' + target_func.__doc__ or ''}"""
 
         @functools.wraps(target_func)
         async def result_func(*args):
@@ -128,7 +121,7 @@ def environment(target):
                 else:
                     logical_result = None
                 # then save the fuck out of it!
-                if '@output_file_descriptor' in cached_code:
+                if 'output_file_descriptor' in check:
                     raise Exception('cannot save file twice!')
 
                 # if len(result) > 10000:
