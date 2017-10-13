@@ -67,9 +67,11 @@ def output_file_descriptor(check, task, ext=None, bin=False):
             mode = 'wb'
         else:
             mode = 'w'
-        target_func.__doc__ = f"""output_file_descriptor: True
+        target_func.__doc__ = f"""
+output_file_descriptor: True
 {f'result_extension: {ext}' if ext else ''}
-{target_func.__doc__ or ''}"""
+{target_func.__doc__ or ''}
+"""
 
         @functools.wraps(target_func)
         async def result_func(*args):
