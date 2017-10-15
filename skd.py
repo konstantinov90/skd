@@ -84,8 +84,10 @@ async def run_task(task):
             # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(yml, check, task))))
         # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
         # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
-
-    await aio.aio.wait(running_checks)
+    if running_checks:
+        await aio.aio.wait(running_checks)
+    else:
+        LOG.warning('check registry for task {} is empty', query)
     await task.finish()
 
 if __name__ == '__main__':

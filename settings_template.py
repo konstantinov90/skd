@@ -1,6 +1,10 @@
+import os.path
+
 DATABASE = 'mongodb://skd:123456@vm-ts-blk-app2/skd_cache'
 
 CHECK_RESULT_PATH = 'check_results'
+
+CHECK_REGISTRY_PATH = os.path.join(os.path.split(__file__)[0], 'reg')
 
 MAX_CONCURRENT_CHECKS = 20
 
@@ -19,3 +23,5 @@ REPOS = {
     "BR": 'git.rosenergo.com:u/konstantinov/SKD/BR',
     "NSS": "https://github.com/konstantinov90/NSS_checks", # "git.rosenergo.com:u/konstantinov/SKD/NSS",
 }
+
+KERBEROS_AUTH = 'username', 'pwd'
