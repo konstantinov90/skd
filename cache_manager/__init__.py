@@ -19,7 +19,6 @@ db = get_db()
 # db.commit.remove()
 
 # r = git.Repo('reg')
-repos_dir = 'reg'
 
 # supposed repo form
 # system_code/
@@ -44,13 +43,13 @@ class Cache(object):
         self.repos = {}
         aio.run(db.cache.remove)
         aio.run(db.commit.remove)
-        if not os.path.isdir(repos_dir):
-            os.mkdir(repos_dir)
+        if not os.path.isdir(S.CHECK_REGISTRY_PATH):
+            os.mkdir(S.CHECK_REGISTRY_PATH)
 
         kerberos_auth.kinit()
 
         for repo_name, url in S.REPOS.items():
-            repo_path = os.path.join(repos_dir, repo_name)
+            repo_path = os.path.join(S.CHECK_REGISTRY_PATH, repo_name)
             try:
                 repo = git.Repo(repo_path)
                 repo.config_writer().set_value('core', 'quotepath', 'false')
