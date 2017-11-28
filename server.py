@@ -62,7 +62,7 @@ async def create_user(request):
     except pymongo.errors.PyMongoError as exc:
         return web.HTTPConflict(text=str(exc))
     else:
-        return 'user {} created'
+        return f'user {usr} created'
 
 # @auth.system_required('register_check')
 async def receive_task(request):
@@ -226,7 +226,7 @@ def init(loop):
 
     cors.add(app.router.add_get('/', index))
     cors.add(app.router.add_post('/rest/send_task', receive_task))
-    for dimension in 'cache tasks checks'.split():
+    for dimension in 'cache', 'tasks', 'checks':
         cors.add(app.router.add_post('/rest/' + dimension, getter(dimension)))
     cors.add(app.router.add_post('/rest/get_last_checks', cached_get_last_checks))
     app.router.add_get('/files/{filename}', get_file)

@@ -39,7 +39,10 @@ async def run_check(extension, check, task):
     )
     cached_code = check.pop('content')
     await check.save()
-    result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
+    if settings.HARD_PROCESSES:
+        result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
+    else:
+        result = await attrgetter(check['extension'])(environment)(check, task, cached_code)
     await check.finish(result=result)
     if os.path.isfile(check.filename):
         await check.put(result_filename=check.rel_filename)

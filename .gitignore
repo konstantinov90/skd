@@ -5,3 +5,4 @@ check_results
 reg
 logs
 settings.py
+cache.json
