@@ -6,6 +6,7 @@ import traceback
 from collections import abc
 from operator import itemgetter
 import re
+import threading
 
 import aiofiles
 import xlsxwriter
@@ -18,7 +19,7 @@ import settings
 import motor.motor_asyncio
 import imp
 
-LOG = app_log.get_logger('env')
+LOG = app_log.get_logger(f'env{threading.get_ident()}')
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
 def single_connection(check, task):
