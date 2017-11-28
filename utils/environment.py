@@ -19,7 +19,7 @@ import settings
 import motor.motor_asyncio
 import imp
 
-LOG = app_log.get_logger(f'env{threading.get_ident()}')
+# LOG = app_log.get_logger(f'env{threading.get_ident()}')
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
 def single_connection(check, task):
@@ -154,6 +154,7 @@ def environment(target):
             else:
                 logical_result = result
         except Exception as exc:
+            LOG = app_log.get_logger(f'env{threading.get_ident()}')
             LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
@@ -165,6 +166,7 @@ def environment(target):
     return decorated_func
 
 def print(msg, check_id):
+    LOG = app_log.get_logger(f'env{threading.get_ident()}')
     LOG.info('check {} said: {}', check_id, msg)
 
 @environment
