@@ -41,9 +41,9 @@ async def run_check(extension, check, task):
     await check.save()
     # if settings.HARD_PROCESSES:
     # if 'tough' in check and check['tough']:
-    #     result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
+    result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
     # else:
-    result = await attrgetter(check['extension'])(environment)(check, task, cached_code)
+        # result = await attrgetter(check['extension'])(environment)(check, task, cached_code)
     await check.finish(result=result)
     if os.path.isfile(check.filename):
         await check.put(result_filename=check.rel_filename)
