@@ -154,8 +154,8 @@ def environment(target):
             else:
                 logical_result = result
         except Exception as exc:
-            LOG = app_log.get_logger(f'env{threading.get_ident()}')
-            LOG.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
+            log = app_log.get_logger('env')
+            log.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
@@ -166,8 +166,8 @@ def environment(target):
     return decorated_func
 
 def print(msg, check_id):
-    LOG = app_log.get_logger(f'env{threading.get_ident()}')
-    LOG.info('check {} said: {}', check_id, msg)
+    log = app_log.get_logger('env')
+    log.info('check {} said: {}', check_id, msg)
 
 @environment
 async def py(cached_code, check, task):
