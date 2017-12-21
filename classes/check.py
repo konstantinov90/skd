@@ -11,6 +11,10 @@ _BASE16 = 2**32
 class Check(BaseDict):
     collection = 'checks'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.task = None
+
     async def save(self):
         self['latest'] = True
         await self.col.update_one({

@@ -20,6 +20,14 @@ import motor.motor_asyncio
 import imp
 
 # LOG = app_log.get_logger(f'env{threading.get_ident()}')
+LOG = None
+
+def set_log(log):
+    LOG = log
+
+def get_log():
+    return LOG
+
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
 def single_connection(check, task):
@@ -91,9 +99,10 @@ output_file_descriptor: True
 
 
 def environment(target):
-    async def decorated_func(check, task, cached_code):
+    async def decorated_func(check, task, cached_code, port):
+        log = app_log.get_logger(f'env_{port}')
         # task = copy.deepcopy(_task)
-        imp.reload(aio)
+        # imp.reload(aio)
         # await aio.lock.acquire()
 
         # imp.reload(motor.motor_asyncio)
@@ -154,7 +163,6 @@ def environment(target):
             else:
                 logical_result = result
         except Exception as exc:
-            log = app_log.get_logger('env')
             log.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
@@ -165,14 +173,13 @@ def environment(target):
 
     return decorated_func
 
-def print(msg, check_id):
-    log = app_log.get_logger('env')
-    log.info('check {} said: {}', check_id, msg)
+def make_log_msg(msg, check_id):
+    app_log.get_logger(f'env').info('check {} said: {}', check_id, msg)
 
 @environment
 async def py(cached_code, check, task):
     try:
-        logging_cached_code = re.sub('print((.*))', r'print(\1, check_id="{}")'.format(check['_id']), cached_code)
+        logging_cached_code = re.sub('print((.*))', r'make_log_msg(\1, check_id="{}")'.format(check['_id']), cached_code)
         
         # logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))

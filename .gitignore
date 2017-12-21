@@ -6,3 +6,4 @@ reg
 logs
 settings.py
 cache.json
+*.code-workspace

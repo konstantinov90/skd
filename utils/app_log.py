@@ -1,11 +1,10 @@
-from datetime import datetime
 import logging
 import logging.handlers
 import os
 import queue
+from datetime import datetime
 
 import settings as S
-
 from utils import authorization as auth
 
 __all__ = ('get_logger',)

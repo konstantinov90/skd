@@ -1,21 +1,17 @@
-import imp
-from operator import attrgetter
-import datetime
 import os
 import os.path
-import sys
 import platform
-from subprocess import Popen
 import sys
+import traceback
+from operator import attrgetter
 
-from classes import Task, Check
+from aiohttp import web
+
 import settings
-from utils import aio, app_log, json_util, environment, db_client
-# from utils.db_client import db
-from utils.environment import py, yml, sql
+from classes import Check, Task
+from utils import aio, app_log, db_client, environment, json_util
 
-LOG = app_log.get_logger()
-PROC_NAME = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
+LOG = None
 db = db_client.get_db()
 
 def init(path):
@@ -24,91 +20,40 @@ def init(path):
 
 init(settings.CHECK_RESULT_PATH)
 
-async def register_task(_task):
-    task = Task(_task)
-    await task.save()
-    aio.aio.ensure_future(run_task(task))
-    return task.data
+async def run_check(check, task, cached_code, port):
+    try: 
+        result = await attrgetter(check['extension'])(environment)(check, task, cached_code, port)
+        await check.finish(result=result)
+        if os.path.isfile(check.filename):
+            await check.put(result_filename=check.rel_filename)
+            await check.calc_crc32()
+    except Exception as e:
+        LOG.error(r'\n'.join(traceback.format_tb(e.__traceback__)) + str(e))
+    finally:
+        await check.put(running=False)
+
+async def index(request):
+    return web.Response(text=request.app['port'])
+
+async def entry(request):
+    data = json_util.to_object_id(await request.json())
+    _check, task, cached_code = data['check'], data['task'], data['cached_code']
+    check = Check.restore(_check)
+    await check.put(running=True)
+    aio.aio.ensure_future(run_check(check, task, cached_code, request.app['port']))
+
+    return web.Response(text="ok")
 
 
-async def run_check(extension, check, task):
-    check.update(
-        task_id=task['_id'],
-        key=task['key'],
-        started=datetime.datetime.now()
-    )
-    cached_code = check.pop('content')
-    await check.save()
-    # if settings.HARD_PROCESSES:
-    if 'tough' in check and check['tough']:
-        result = await aio.proc_run(run_check_process, check['extension'], check, task, cached_code)
-    else:
-        result = await attrgetter(check['extension'])(environment)(check, task, cached_code)
-    await check.finish(result=result)
-    if os.path.isfile(check.filename):
-        await check.put(result_filename=check.rel_filename)
-        await check.calc_crc32()
+def start(port_str):
+    app = web.Application()
+    app.router.add_get('/', index)
+    app.router.add_post('/entry/', entry)
+    app['port'] = port_str
+    web.run_app(app, loop=aio.aio.get_event_loop(), port=int(port_str))
 
-def run_check_process(extension, check, task, cached_code):
-    # imp.reload(aio)
-    # imp.reload(db_client)
-    # sys.modules.clear()
-    # imp.reload(environment)
-    
-    return aio.loop_run(attrgetter(extension)(environment), check, task, cached_code)
-
-# def run_sql(check, task):
-#     aio.run(environment.sql, check, task)
-
-# def run_yml(check, task):
-#     aio.run(environment.yml, check, task)
-
-# def run_py(check, task):
-#     aio.run(environment.py, check, task)
-
-async def run_task(task):
-    running_checks = []
-    query = {
-        'system': task['system'],
-        'operation': task['operation'],
-        '$or': task.get('checks', [{}])
-    }
-    LOG.info('query {}', query)
-    async for _check in db.cache.find(query):
-        check = Check(_check)
-        running_checks.append(aio.aio.ensure_future(run_check(check['extension'], check, task)))
-        # if check['extension'] == 'py':
-        #     running_checks.append(aio.aio.ensure_future(py(check, task)))
-        #     # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(py, check, task))))
-        # elif check['extension'] == 'sql':
-        #     running_checks.append(aio.aio.ensure_future(sql(check, task)))
-        #     # running_checks.append(aio.aio.ensure_future(aio.proc_run(run_check, check['extension'], check, task)))
-        # elif check['extension'] == 'yml':
-        #     running_checks.append(aio.aio.ensure_future(yml(check, task)))
-            # running_checks.append(aio.aio.ensure_future(aio.proc_run(aio.run(yml, check, task))))
-        # proc = Popen([PROC_NAME, '{}.py'.format(__name__), json_util.dumps(_check), json_util.dumps(task.data)], start_new_session=True)
-        # running_checks.append(aio.aio.ensure_future(aio.async_run(proc.wait)))
-    if running_checks:
-        await aio.aio.wait(running_checks)
-    else:
-        LOG.warning('check registry for task {} is empty', query)
-    await task.finish()
 
 if __name__ == '__main__':
-    # try:
-    #     import resource
-    # except ModuleNotFoundError:
-    #     pass
-    # else:
-    #     half_gig = 2**29
-    #     resource.setrlimit(resource.RLIMIT_AS, (half_gig, half_gig))
-    _check = json_util.to_object_id(json_util.json.loads(sys.argv[1])) 
-    check = Check(_check)
-    task = json_util.to_object_id(json_util.json.loads(sys.argv[2]))
-    if check['extension'] == 'py':
-        aio.run(py, check, task)
-    elif check['extension'] == 'sql':
-        aio.run(sql, check, task)
-    elif check['extension'] == 'yml':
-        aio.run(yml, check, task)
-    
+    port_str = sys.argv[1]
+    LOG = app_log.get_logger(f'worker_{port_str}')    
+    start(port_str)

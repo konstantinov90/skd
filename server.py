@@ -1,29 +1,34 @@
 #! /usr/bin/env python3
 import base64
-import bson
+import datetime
 import hashlib
-from operator import itemgetter
 import os
 import os.path
+import platform
+import random
 import sys
+import traceback
 import tracemalloc
 import urllib.parse
 import weakref
+from operator import itemgetter
+from subprocess import Popen
 
 import aiofiles
-import aiohttp.web as web
+import aiohttp
 import aiohttp_cors
-# import aiohttp_session
+import bson
 import pymongo.errors
-# from aiohttp_session.cookie_storage import EncryptedCookieStorage
-# from cryptography import fernet
+from aiohttp import web
 from multidict import MultiDict
 
-import skd
 import cache_manager
-from classes.ttl_dict import TTLDictNew
 import settings
-from utils import aio, app_log, authorization as auth, json_util
+import skd
+from classes import Check, Task
+from classes.ttl_dict import TTLDictNew
+from utils import authorization as auth
+from utils import aio, app_log, json_util
 from utils.db_client import get_db
 
 LOG = app_log.get_logger()
@@ -33,42 +38,22 @@ db = get_db()
 async def index(request):
     return 'SKD rest api'
 
-async def login(request):
-    try:
-        usr, pwd = request['body']['username'], request['body']['password']
-        (user, ) = await db.users.find({'_id': usr}).to_list(None)
-    except KeyError:
-        return web.HTTPBadRequest()
-    except ValueError:
-        return web.HTTPForbidden()
-
-    if hashlib.sha1(user['salt'] + pwd.encode('utf-8')).digest() == user['password']:
-        await auth.auth.remember(request, usr)
-        return 'OK'
-    return web.HTTPForbidden()
-
-@auth.acl_required('admin')
-async def create_user(request):
-    try:
-        usr, pwd = request['body']['username'], request['body']['password']
-    except KeyError:
-        return web.HTTPBadRequest()
-    salt = os.urandom(16)
-    permissions = request['body'].get('permissions', [])
-    enc_pwd = hashlib.sha1(salt + pwd.encode('utf-8')).digest()
-    try:
-        user = {"_id": usr, "salt": salt, "password": enc_pwd, "permissions": permissions}
-        await db.users.insert(user)
-    except pymongo.errors.PyMongoError as exc:
-        return web.HTTPConflict(text=str(exc))
-    else:
-        return f'user {usr} created'
-
-# @auth.system_required('register_check')
 async def receive_task(request):
-    return await skd.register_task(request['body'])
+    # return await skd.register_task(request['body'])
 
-# @auth.system_required('view')
+    task = Task(request['body'])
+    await task.save()
+
+    query = {
+        'system': task['system'],
+        'operation': task['operation'],
+        '$or': task.get('checks', [{}])
+    }
+    async for _check in db.cache.find(query):
+        check = Check(_check)
+        check.task = task
+        await request.app['queue'].put(check)
+    return task.data
 
 def remember_task(handler):
     async def _handler(request):
@@ -168,6 +153,9 @@ async def get_file(request):
         resp.write(await fd.read())
     return resp
 
+async def queue_size(request):
+    return web.Response(text=str(request.app['queue'].qsize()))
+
 # from logging import LogRecord
 # import sys
 # import gc
@@ -196,11 +184,87 @@ async def on_shutdown(app):
         app['refresher'],
     ))
 
+    app['queue_processing'].cancel()
+
     for req in app['mem_cache_requests']:
         if not req.done():
             req.cancel()
 
+    for proc in app['workers'].values():
+        proc.terminate()
+
     await cancel_task
+
+async def start_workers(app):
+    app['workers'] = {}
+    proc_name = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
+    for port in settings.WORKER_PORTS:
+        app['workers'][port] = Popen([proc_name, 'skd.py', str(port)])
+
+async def clear_running_checks(app):
+    await db.checks.update_many({'running': True}, {'$set': {'running': False}})
+
+async def process_checks(app):
+    while app['running']:
+        check = await app['queue'].get()
+
+        aio.aio.ensure_future(send_check(check, app))
+
+async def get_idle_worker(session, app):
+    reqs = []
+    for port in app['workers']:
+        url = f'http://localhost:{port}'
+        reqs.append(session.get(url))
+
+    done, pending = await aio.aio.wait(reqs, timeout=5)
+    for future in pending:
+        future.cancel()
+
+    if not done:
+        LOG.info('error')
+        await aio.aio.sleep(10)
+        return await get_idle_worker(session, app)
+    (resp,) = random.sample(done, 1)
+    LOG.info(str(resp))
+    try:
+        port = await resp.result().text()
+        LOG.info('found worker at {}', port)
+    except Exception as e:
+        LOG.error(r'\n'.join(traceback.format_tb(e.__traceback__)) + str(e))
+    return port
+
+
+async def send_check(check, app):
+    try:
+        async with aiohttp.ClientSession(json_serialize=json_util.dumps) as session:
+            task = check.task
+            # cached_code = check.pop('content')
+            # await check.save()
+            check.update(
+                task_id=task['_id'],
+                key=task['key'],
+                started=datetime.datetime.now(),
+            )
+            cached_code = check.pop('content')
+
+            await check.save()
+
+            port = await get_idle_worker(session, app)
+            url = f'http://localhost:{port}/entry/'
+            
+            try:
+                async with session.post(url, data=json_util.dumps({'task': task.data, 'check': check.data, 'cached_code': cached_code})) as resp:
+                    assert (await resp.text()) == "ok"
+                await check.put(submitted_to=url)
+            except Exception as e:
+                LOG.error(r'\n'.join(traceback.format_tb(e.__traceback__)) + str(e))
+    except Exception as e:
+        LOG.error(r'\n'.join(traceback.format_tb(e.__traceback__)) + str(e))
+    # await check.finish(result=result)
+    # if os.path.isfile(check.filename):
+    #     await check.put(result_filename=check.rel_filename)
+    #     await check.calc_crc32()
+
 
 
 def init(loop):
@@ -208,6 +272,7 @@ def init(loop):
     # cache_manager.Cache()
 
     middlewares = [
+        web.normalize_path_middleware(),
         json_util.request_parser_middleware,
         auth.auth_middleware,
         auth.acl_middleware,
@@ -225,26 +290,27 @@ def init(loop):
     app.middlewares.append(json_util.response_encoder_middleware)
 
     cors.add(app.router.add_get('/', index))
-    cors.add(app.router.add_post('/rest/send_task', receive_task))
+    cors.add(app.router.add_post('/rest/send_task/', receive_task))
     for dimension in 'cache', 'tasks', 'checks':
-        cors.add(app.router.add_post('/rest/' + dimension, getter(dimension)))
-    cors.add(app.router.add_post('/rest/get_last_checks', cached_get_last_checks))
-    app.router.add_get('/files/{filename}', get_file)
-    app.router.add_post('/archive', get_archive)
-    app.router.add_get('/archive', get_archive)
-
-    cors.add(app.router.add_post('/auth', login))
-    app.router.add_post('/create_user', create_user)
+        cors.add(app.router.add_post(f'/rest/{dimension}/', getter(dimension)))
+    cors.add(app.router.add_post('/rest/get_last_checks/', cached_get_last_checks))
+    app.router.add_get('/files/{filename}/', get_file)
+    app.router.add_post('/archive/', get_archive)
+    app.router.add_get('/archive/', get_archive)
+    app.router.add_get('/queue_size/', queue_size)
 
     app['running'] = True
     app['mem_cache'] = TTLDictNew()
     app['mem_cache_requests'] = weakref.WeakSet()
     app['refresher'] = aio.aio.ensure_future(cache_manager.Cache().refresher(app))
+    app['queue'] = aio.aio.Queue(loop=loop)
+    app['queue_processing'] = aio.aio.ensure_future(process_checks(app))
     # app['result_cache'] = aio.aio.ensure_future(get_last_checks(app))
     app['mem_log'] = aio.aio.ensure_future(memory_log(app))
+    app.on_startup.append(clear_running_checks)
+    app.on_startup.append(start_workers)
     app.on_shutdown.append(on_shutdown)
     return app
 
 if __name__ == '__main__':
     web.run_app(init(aio.aio.get_event_loop()), port=settings.PORT)
-

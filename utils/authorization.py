@@ -1,12 +1,27 @@
-from functools import wraps
 import os
+from functools import wraps
 
 from aiohttp import web
-import aiohttp_auth.auth as auth
-import aiohttp_auth.acl as acl
+from aiohttp_auth import acl, auth
 from aiohttp_auth.permissions import Permission
 
 from utils.db_client import get_db
+
+
+async def process_response(self, request, response):
+    COOKIE_AUTH_KEY = 'aiohttp_auth.auth.CookieTktAuthentication'
+    await super(auth.cookie_ticket_auth.CookieTktAuthentication, self).process_response(request, response)
+    if COOKIE_AUTH_KEY in request:
+        if hasattr(response, 'started') and response.started:
+            raise RuntimeError("Cannot save cookie into started response")
+
+        cookie = request[COOKIE_AUTH_KEY]
+        if cookie == '':
+            response.del_cookie(self.cookie_name)
+        else:
+            response.set_cookie(self.cookie_name, cookie)
+
+auth.cookie_ticket_auth.CookieTktAuthentication.process_response = process_response
 
 auth_policy = auth.CookieTktAuthentication(os.urandom(32), 6000000, include_ip=True)
 auth_middleware = auth.auth_middleware(auth_policy)

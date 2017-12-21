@@ -64,7 +64,8 @@ async def response_encoder_middleware(app, handler):
         if isinstance(resp, (web.Response, web.StreamResponse)):
             return resp
         try:
-            return web.Response(text=_ENCODER.encode(resp), headers=JSON_HEADER)
+            response = web.Response(text=_ENCODER.encode(resp), headers=JSON_HEADER)
+            return response
         except TypeError as exc:
             raise
             raise ValueError('Unacceptable response!')

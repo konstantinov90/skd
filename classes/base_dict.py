@@ -1,9 +1,9 @@
-import bson
 import collections
 import copy
 import datetime
 
 from utils.db_client import get_db
+
 
 class BaseDict(collections.UserDict):
     db = get_db()
@@ -13,6 +13,16 @@ class BaseDict(collections.UserDict):
         dct = {k: v for k, v in dct.items() if k not in ('_id', 'started', 'finished')}
         super().__init__(dct)
         self.oid = None
+
+    @classmethod
+    def restore(cls, dct):
+        instance = cls(dct)
+        instance.oid = dct['_id']
+        instance.update(
+            _id=dct['_id'],
+            started=dct['started'],
+        )
+        return instance
 
     def set_db(self, db):
         self.db = db
