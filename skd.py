@@ -20,9 +20,9 @@ def init(path):
 
 init(settings.CHECK_RESULT_PATH)
 
-async def run_check(check, task, cached_code, port):
+async def run_check(check, task, cached_code, env_logger):
     try: 
-        result = await attrgetter(check['extension'])(environment)(check, task, cached_code, app)
+        result = await attrgetter(check['extension'])(environment)(check, task, cached_code, env_logger)
         await check.finish(result=result)
         if os.path.isfile(check.filename):
             await check.put(result_filename=check.rel_filename)
@@ -40,7 +40,7 @@ async def entry(request):
     _check, task, cached_code = data['check'], data['task'], data['cached_code']
     check = Check.restore(_check)
     await check.put(running=True)
-    aio.aio.ensure_future(run_check(check, task, cached_code, request.app['port']))
+    aio.aio.ensure_future(run_check(check, task, cached_code, request.app['env_logger']))
 
     return web.Response(text="ok")
 
