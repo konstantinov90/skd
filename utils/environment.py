@@ -100,6 +100,7 @@ output_file_descriptor: True
 
 def environment(target):
     async def decorated_func(check, task, cached_code, port):
+        app_log.get_logger(f"env_{port}").info(f"env_{port}")
         if not get_port():
             set_port(port)
         # task = copy.deepcopy(_task)
