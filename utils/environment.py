@@ -21,14 +21,6 @@ import imp
 
 get_ora_con_str = itemgetter('login', 'password', 'db')
 
-PORT = None
-
-def set_port(port):
-    PORT = port
-
-def get_port():
-    return PORT
-
 
 def single_connection(check, task):
     def decorator(target_func):
@@ -99,10 +91,7 @@ output_file_descriptor: True
 
 
 def environment(target):
-    async def decorated_func(check, task, cached_code, port):
-        app_log.get_logger(f"env_{port}").info(f"env_{port}")
-        if not get_port():
-            set_port(port)
+    async def decorated_func(check, task, cached_code, log):
         # task = copy.deepcopy(_task)
         # imp.reload(aio)
         # await aio.lock.acquire()
@@ -125,7 +114,7 @@ def environment(target):
         # LOG.info('hello env4')
 
         try:
-            result = await target(cached_code, check, task)
+            result = await target(cached_code, check, task, log)
             if isinstance(result, abc.Sequence) and not isinstance(result, str):
                 # deconstruct complex result
                 if result and isinstance(result[0], bool) or result[0] is None:
@@ -165,7 +154,7 @@ def environment(target):
             else:
                 logical_result = result
         except Exception as exc:
-            app_log.get_logger(f'env_{get_port()}').error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
+            log.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
@@ -175,13 +164,13 @@ def environment(target):
 
     return decorated_func
 
-def make_log_msg(msg, check_id, port):
-    app_log.get_logger(f'env_{port}').info('check {} said: {}', check_id, msg)
+# def make_log_msg(msg, check_id, port):
+#     log.info('check {} said: {}', check_id, msg)
 
 @environment
-async def py(cached_code, check, task):
+async def py(cached_code, check, task, log):
     try:
-        logging_cached_code = re.sub('print((.*))', f'''make_log_msg(\\1, check_id="{check['_id']}", port="{get_port()}")''', cached_code)
+        logging_cached_code = re.sub('print((.*))', f'''log.info('check {check['_id']} said: \\1')''', cached_code)
         
         # logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))
@@ -192,12 +181,12 @@ async def py(cached_code, check, task):
     except Exception as exc:
         raise exc
 
-async def sql(check, task, loop):
+async def sql(check, task, loop, log):
     check['type'] = 'LOGICAL'
-    return await yml(check, task, loop)
+    return await yml(check, task, loop, log)
 
 @environment
-async def yml(query, check, task):
+async def yml(query, check, task, log):
     if check['type'] == 'LOGICAL':
 
         @single_connection(check, task)
