@@ -180,7 +180,7 @@ def make_log_msg(msg, check_id, port):
 @environment
 async def py(cached_code, check, task):
     try:
-        logging_cached_code = re.sub('print((.*))', f'''make_log_msg(\1, check_id="{check['_id']}", port="{get_port()}")''', cached_code)
+        logging_cached_code = re.sub('print((.*))', f'''make_log_msg(\\1, check_id="{check['_id']}", port="{get_port()}")''', cached_code)
         
         # logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))
