@@ -170,7 +170,7 @@ def environment(target):
 @environment
 async def py(cached_code, check, task, log):
     try:
-        logging_cached_code = re.sub('print((.*))', f'''log.info('check {check['_id']} said: {{}}', \\1)''', cached_code)
+        logging_cached_code = re.sub('print((.*))', f'''logger_app.get_logger('env_2015').info('check {check['_id']} said: {{}}', \\1)''', cached_code)
         
         # logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))
