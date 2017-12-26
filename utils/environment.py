@@ -91,7 +91,7 @@ output_file_descriptor: True
 
 
 def environment(target):
-    async def decorated_func(check, task, cached_code, log):
+    async def decorated_func(check, task, cached_code, port):
         # task = copy.deepcopy(_task)
         # imp.reload(aio)
         # await aio.lock.acquire()
@@ -114,7 +114,7 @@ def environment(target):
         # LOG.info('hello env4')
 
         try:
-            result = await target(cached_code, check, task, log)
+            result = await target(cached_code, check, task, port)
             if isinstance(result, abc.Sequence) and not isinstance(result, str):
                 # deconstruct complex result
                 if result and isinstance(result[0], bool) or result[0] is None:
@@ -154,7 +154,7 @@ def environment(target):
             else:
                 logical_result = result
         except Exception as exc:
-            log.error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
+            app_log.get_logger(f'env_{port}').error('check: {}.{} failed with error: {}', check['name'], check['extension'], traceback.format_exc())
             logical_result = 'runtime error: {}'.format(exc)
 
         # update на время, когда выполнилась проверка
@@ -168,9 +168,9 @@ def environment(target):
 #     log.info('check {} said: {}', check_id, msg)
 
 @environment
-async def py(cached_code, check, task, log):
+async def py(cached_code, check, task, port):
     try:
-        logging_cached_code = re.sub('print((.*))', f'''app_log.get_logger('env_2015').info('check {check['_id']} said: {{}}', \\1)''', cached_code)
+        logging_cached_code = re.sub('print((.*))', f'''app_log.get_logger('env_{port}').info('check {check['_id']} said: {{}}', \\1)''', cached_code)
         
         # logging_cached_code = cached_code
         eval(compile(logging_cached_code, '<string>', 'single'))
@@ -181,12 +181,12 @@ async def py(cached_code, check, task, log):
     except Exception as exc:
         raise exc
 
-async def sql(check, task, loop, log):
+async def sql(check, task, loop, port):
     check['type'] = 'LOGICAL'
-    return await yml(check, task, loop, log)
+    return await yml(check, task, loop, port)
 
 @environment
-async def yml(query, check, task, log):
+async def yml(query, check, task, port):
     if check['type'] == 'LOGICAL':
 
         @single_connection(check, task)
