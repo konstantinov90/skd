@@ -25,15 +25,15 @@ from multidict import MultiDict
 import cache_manager
 import settings
 import skd
-from classes import Check, Task
+from classes import Check, Task, Cache
 from classes.ttl_dict import TTLDictNew
 from utils import authorization as auth
 from utils import aio, app_log, json_util
-from utils.db_client import get_db
+# from utils.db_client import get_db
 
 LOG = app_log.get_logger()
 MEM_LOG = app_log.get_logger('memory')
-db = get_db()
+# db = get_db()
 
 async def index(request):
     return 'SKD rest api'
@@ -49,7 +49,7 @@ async def receive_task(request):
         'operation': task['operation'],
         '$or': task.get('checks', [{}])
     }
-    async for _check in db.cache.find(query):
+    async for _check in Cache.find(query):
         check = Check(_check)
         check.task = task
         await request.app['queue'].put(check)
@@ -71,7 +71,7 @@ async def cached_get_last_checks(request):
     return await mem_cache[query, response_hash]
 
 
-def getter(collection):
+def getter(dimension):
     # @auth.system_required('view')
     async def route(request):
         query = request['body']['query']
@@ -80,7 +80,7 @@ def getter(collection):
         skip = request['body'].get('skip')
         limit = request['body'].get('limit')
 
-        cursor = db.get_collection(collection)
+        cursor = dimension.get_col()
         try:
             cursor = cursor.find(query, request['body'].get('project'))
             if sort is not None:
@@ -202,7 +202,7 @@ async def start_workers(app):
         app['workers'][port] = Popen([proc_name, 'skd.py', str(port)])
 
 async def clear_running_checks(app):
-    await db.checks.update_many({'running': True}, {'$set': {'running': False}})
+    await Check.update_many({'running': True}, {'$set': {'running': False}})
 
 async def process_checks(app):
     while app['running']:
@@ -272,7 +272,7 @@ def init(loop):
     # cache_manager.Cache()
 
     middlewares = [
-        web.normalize_path_middleware(),
+        web.normalize_path_middleware(redirect_class=web.HTTPTemporaryRedirect),
         json_util.request_parser_middleware,
         auth.auth_middleware,
         auth.acl_middleware,
@@ -291,8 +291,8 @@ def init(loop):
 
     cors.add(app.router.add_get('/', index))
     cors.add(app.router.add_post('/rest/send_task/', receive_task))
-    for dimension in 'cache', 'tasks', 'checks':
-        cors.add(app.router.add_post(f'/rest/{dimension}/', getter(dimension)))
+    for route, dimension in zip(('cache', 'tasks', 'checks'), (Cache, Task, Check)):
+        cors.add(app.router.add_post(f'/rest/{route}/', getter(dimension)))
     cors.add(app.router.add_post('/rest/get_last_checks/', cached_get_last_checks))
     app.router.add_get('/files/{filename}/', get_file)
     app.router.add_post('/archive/', get_archive)

@@ -11,7 +11,7 @@ import threading
 import aiofiles
 import xlsxwriter
 
-from utils import DB, aio, app_log, db_client
+from utils import DB, aio, app_log #, db_client
 from utils.aiofiles_adapter import Adapter
 from utils.zip_join import zip_join
 

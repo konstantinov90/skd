@@ -27,9 +27,21 @@ class BaseDict(collections.UserDict):
     def set_db(self, db):
         self.db = db
 
+    @classmethod
+    def get_col(cls):
+        return cls.db[cls.collection]
+
     @property
     def col(self):
-        return self.db[self.collection]
+        return self.get_col()
+
+    @classmethod
+    def find(cls, *args):
+        return cls.get_col().find(*args)
+
+    @classmethod
+    def update_many(cls, *args):
+        return cls.get_col().update_many(*args)
 
     async def save(self):
         self['started'] = datetime.datetime.now()

@@ -1,15 +1,17 @@
 import collections
-from datetime import datetime, timedelta
 import hashlib
 import weakref
+from datetime import datetime, timedelta
 
-from utils.aio import aio
-from utils.db_client import get_db
 from utils import app_log, json_util
+from utils.aio import aio
+# from utils.db_client import get_db
+
+from . import Cache, Task, Check
 
 LOG = app_log.get_logger()
 
-db = get_db()
+# db = get_db()
 
 # TEN_SECONDS = timedelta(seconds=10)
 
@@ -23,12 +25,14 @@ class SingleQueryRunner(object):
     sort_by = (('name', 1), ('extension', 1))
     project = {'content': 0}
 
-    def __init__(self, query):
-        self.checks_tmpls_query = {'system': query['system']}
-        if 'operation' in query:
-            self.checks_tmpls_query.update(operation=query['operation'])
+    def __init__(self, task):
+        self.checks_tmpls_query = {'system': task['system']}
+        if 'operation' in task:
+            self.checks_tmpls_query.update(operation=task['operation'])
 
-        self.query = dict(query)
+        self.query = dict(task)
+        if 'key' in task:
+            self.query['key'] = task.key
         self.query.update(latest=True)
 
         self.task = None
@@ -63,12 +67,12 @@ class SingleQueryRunner(object):
 
             check_tmpls_map = {
                 check_tmpl['key_path']: check_tmpl
-                async for check_tmpl in db.cache.find(
+                async for check_tmpl in Cache.find(
                     self.checks_tmpls_query, self.project
                 ).sort(self.sort_by)
             }
 
-            async for check in db.checks.find(self.query):
+            async for check in Check.find(self.query):
                 if check['key_path'] in check_tmpls_map:
                     check_tmpls_map[check['key_path']].update(check=check)
             response_data = list(check_tmpls_map.values())
@@ -95,11 +99,11 @@ class TTLDictNew(object):
         return aio.ensure_future(self._await_query(query, response_hash))
 
     async def _await_query(self, query, response_hash):
-        key = json_util.dumps(query)
-        runner = self.dct.get(key)
+        runner_key = json_util.dumps(query)
+        runner = self.dct.get(runner_key)
         if not runner:
-            runner = SingleQueryRunner(query)
-            self.dct[key] = runner
+            runner = SingleQueryRunner(Task(query))
+            self.dct[runner_key] = runner
         sub = T()
         runner.subscribe(sub)
         while response_hash == runner.response.get('response_hash', response_hash):

@@ -9,10 +9,10 @@ from aiohttp import web
 
 import settings
 from classes import Check, Task
-from utils import aio, app_log, db_client, environment, json_util
+from utils import aio, app_log, environment, json_util  # , db_client
 
 LOG = None
-db = db_client.get_db()
+# db = db_client.get_db()
 
 def init(path):
     if not os.path.isdir(path):
