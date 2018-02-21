@@ -242,7 +242,7 @@ async def send_check(check, app):
             # await check.save()
             check.update(
                 task_id=task['_id'],
-                key=task['key'],
+                key=task.key,
                 started=datetime.datetime.now(),
             )
             cached_code = check.pop('content')
