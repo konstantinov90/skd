@@ -19,8 +19,6 @@ import settings
 import motor.motor_asyncio
 import imp
 
-get_ora_con_str = itemgetter('login', 'password', 'db')
-
 
 def single_connection(check, task):
     def decorator(target_func):
@@ -28,10 +26,10 @@ def single_connection(check, task):
         async def result_func(*args):
             (con_data,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
-                con = await DB.OracleConnection.get(*get_ora_con_str(con_data))
+                con = await DB.AsyncConnection(con_data['class_name']).get(con_data['connection_string'])
                 return await target_func(*args, con, con_data['ops'])
             else:
-                con = DB.OracleConnection(*get_ora_con_str(con_data))
+                con = DB.Connection(con_data['class_name'], con_data['connection_string'])
                 return target_func(*args, con, con_data['ops'])
         return result_func
     return decorator
@@ -46,7 +44,7 @@ def double_connection(check, task):
             async def result_func(*args):
                 fwd = []
                 for con_data in task['sources']:
-                    con = await DB.OracleConnection.get(*get_ora_con_str(con_data))
+                    con = await DB.AsyncConnection(con_data['class_name']).get(con_data['connection_string'])
                     fwd += con, con_data['ops']
                 return await target_func(*args, *fwd)
         else:
@@ -54,7 +52,7 @@ def double_connection(check, task):
             async def result_func(*args):
                 fwd = []
                 for con_data in task['sources']:
-                    con = DB.OracleConnection(*get_ora_con_str(con_data))
+                    con = DB.OracleConnection(con_data['class_name'], con_data['connection_string'])
                     fwd += con, con_data['ops']
                 return target_func(*args, *fwd)
         return result_func

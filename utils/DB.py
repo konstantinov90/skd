@@ -3,8 +3,11 @@
 # import copy
 from contextlib import contextmanager
 from functools import partial, wraps
+import re
+import sys
 
 import cx_Oracle
+import psycopg2
 import vertica_python
 
 from utils import aio
@@ -48,7 +51,7 @@ ARRAYSIZE = 1000
 #             cursor.close()
 #         return dummy
 #     return decorator
-class async_cursor():
+class _AsyncCursor():
     def __init__(self, con):
         self.con = con
         self.curs = None
@@ -97,7 +100,7 @@ class _DBConnection(object):
         curs.close()
 
     def async_cursor(self):
-        return async_cursor(self)
+        return _AsyncCursor(self)
 
     def exec_insert(self, query, **input_data):
         """execute pl/sql expression"""
@@ -174,6 +177,12 @@ class _DBConnection(object):
 def filter_dict(dct, subdict):
     return {i: v for i, v in dct.items() if i.upper() in subdict}
 
+def Connection(class_name, *args, **kwargs):
+    return getattr(sys.modules[__name__], class_name)(*args, **kwargs)
+
+async def AsyncConnection(class_name):
+    return getattr(sys.modules[__name__], class_name)
+
 class OracleConnection(_DBConnection):
     """This class establishes connection to ORACLE DataBase."""
     def __init__(self, *args, **kwargs):
@@ -206,3 +215,22 @@ class VerticaConnection(_DBConnection):
         self.con_func = partial(vertica_python.connect, **kwargs)
         if not do_not_connect:
             self.con = self.con_func()
+
+class PostgresConnection(_DBConnection):
+    """This class establishes connection to POSTGRESQL DataBase"""
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        do_not_connect = kwargs.pop('do_not_connect', False)
+        self.con_func = partial(psycopg2.connect, *args, **kwargs)
+        if not do_not_connect:
+            self.con = self.con_func()
+
+    @staticmethod
+    def _run_query(curs, query, input_data):
+        _query = re.sub(r'(?<!\:)\:([a-zA-Z0-9]+)', r'{\1}', query)
+        curs.execute(_query.format(**input_data))
+
+    @staticmethod
+    async def _async_run_query(curs, query, input_data):
+        _query = re.sub(r'(?<!\:)\:([a-zA-Z0-9]+)', r'{\1}', query)
+        await aio.async_run(curs.execute, _query.format(**input_data))

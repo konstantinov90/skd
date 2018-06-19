@@ -198,10 +198,12 @@ async def on_shutdown(app):
     await cancel_task
 
 async def start_workers(app):
+    worker_path = os.path.join(os.path.dirname(__file__), 'skd.py')
+
     app['workers'] = {}
     proc_name = 'python{}'.format('3' if 'linux' in platform.system().lower() else '')
     for port in settings.WORKER_PORTS:
-        app['workers'][port] = Popen([proc_name, 'skd.py', str(port)])
+        app['workers'][port] = Popen([proc_name, worker_path, str(port)])
 
 async def clear_running_checks(app):
     await Check.update_many({'running': True}, {'$set': {'running': False}})
