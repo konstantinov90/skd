@@ -16,7 +16,6 @@ class Task(BaseDict):
         return SON(sorted(self.get('key',{}).items(), key=SORTING_FN))
 
     async def save(self):
-        if sel
         con_strs = [s['connection_string'] for s in self['sources']]
         for s in self['sources']:
             if s['class_name'] == 'OracleConnection':
