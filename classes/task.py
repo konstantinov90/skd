@@ -1,3 +1,4 @@
+import re
 from operator import itemgetter
 
 from bson.son import SON
@@ -15,9 +16,13 @@ class Task(BaseDict):
         return SON(sorted(self.get('key',{}).items(), key=SORTING_FN))
 
     async def save(self):
-        pwds = [s['password'] for s in self['sources']]
+        if sel
+        con_strs = [s['connection_string'] for s in self['sources']]
         for s in self['sources']:
-            s['password'] = '***'
+            if s['class_name'] == 'OracleConnection':
+                s['connection_string'] = re.sub(r'(?<=\/)([^@]*)(?=@)', '***', s['connection_string'])
+            elif s['class_name'] == 'PostgresConnection':
+                s['connection_string'] = re.sub(r'(?<=password)(\s*=\s*)([^\s]*)', r'\1***', s['connection_string'])
 
         if 'key' in self:
             _key = self['key']
@@ -28,5 +33,5 @@ class Task(BaseDict):
         if 'key' in self:
             self['key'] = _key
 
-        for s, pwd in zip(self['sources'], pwds):
-            s['password'] = pwd
+        for s, con_str in zip(self['sources'], con_strs):
+            s['connection_string'] = con_str
