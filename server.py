@@ -194,6 +194,7 @@ async def on_shutdown(app):
 
     for proc in app['workers'].values():
         proc.terminate()
+        print(f'process {proc} terminated')
 
     await cancel_task
 
