@@ -26,7 +26,7 @@ def single_connection(check, task):
         async def result_func(*args):
             (con_data,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
-                con = (await DB.AsyncConnection(con_data['class_name'])).get(con_data['connection_string'])
+                con = await DB.AsyncConnection(con_data['class_name']).get(con_data['connection_string'])
                 return await target_func(*args, con, con_data['ops'])
             else:
                 con = DB.Connection(con_data['class_name'], con_data['connection_string'])
@@ -44,7 +44,7 @@ def double_connection(check, task):
             async def result_func(*args):
                 fwd = []
                 for con_data in task['sources']:
-                    con = (await DB.AsyncConnection(con_data['class_name'])).get(con_data['connection_string'])
+                    con = await DB.AsyncConnection(con_data['class_name']).get(con_data['connection_string'])
                     fwd += con, con_data['ops']
                 return await target_func(*args, *fwd)
         else:

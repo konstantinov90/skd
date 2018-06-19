@@ -180,7 +180,7 @@ def filter_dict(dct, subdict):
 def Connection(class_name, *args, **kwargs):
     return getattr(sys.modules[__name__], class_name)(*args, **kwargs)
 
-async def AsyncConnection(class_name):
+def AsyncConnection(class_name):
     return getattr(sys.modules[__name__], class_name)
 
 class OracleConnection(_DBConnection):
