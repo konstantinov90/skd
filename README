@@ -1,9 +1,0 @@
-required command:
-
-`git config --global core.quotepath off`
-
-Установка зависимостей:
-
-`pip install -r requirements.txt`
-
-Данное приложение представляет собой веб-сервис, выполняющий SQL проверки и Python скрипты пачками. Приложение построено на основе фреймворка [[aiohttp|https://aiohttp.readthedocs.io/en/stable/]]
