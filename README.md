@@ -55,9 +55,8 @@ POST на ${SKD_URL}/rest/send_task/
  },
 "sources": [  //для идентификации исходных данных - коннекты к БД, значения переменных, в т.ч. id исходных операций
     {
-        "login": "facts",
-        "password": "***",
-        "db": "ts_black",
+        "connection_string": "facts/***@ts_black", //строка подключения к БД Oracle
+        "class_name": "OracleConnection", // говорим, что соединяемся с БД Oracle
         "ops": {
             "CONSCALC": 1442,
             "LOADPOWDEM": 56601,
@@ -66,9 +65,8 @@ POST на ${SKD_URL}/rest/send_task/
             // любой другой набор полей, включая даты (по смыслу это bind variables)
             // https://blogs.oracle.com/sql/improve-sql-query-performance-by-using-bind-variables
     }, {
-        "login": "facts",
-        "password": "***",
-        "db": "ts_white",
+        "connection_string": "host=vm-facts-db port=5432 dbname=facts user=facts password=***",
+        "class_name": "PostgresConnection",
         "ops": {
             "CONSCALC": 1,
             "LOADPOWDEM": 2,
