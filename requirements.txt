@@ -1,0 +1,6 @@
+aiohttp
+gitpython
+motor
+cx_Oracle
+psycopg2
+vertica_python

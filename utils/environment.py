@@ -20,22 +20,29 @@ import motor.motor_asyncio
 import imp
 
 
-def single_connection(check, task):
+def single_connection(check, task, source=None):
     def decorator(target_func):
         @functools.wraps(target_func)
         async def result_func(*args):
-            (con_data,) = task['sources']
+            if not source:
+                (source,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
-                con = await DB.AsyncConnection(con_data['class_name']).get(con_data['connection_string'])
-                return await target_func(*args, con, con_data['ops'])
+                con = await DB.AsyncConnection(source['class_name']).get(source['connection_string'])
+                return await target_func(*args, con, source['ops'])
             else:
-                con = DB.Connection(con_data['class_name'], con_data['connection_string'])
-                return target_func(*args, con, con_data['ops'])
+                con = DB.Connection(source['class_name'], source['connection_string'])
+                return target_func(*args, con, source['ops'])
         return result_func
     return decorator
 
-def double_connection(check, task):
-    if len(task['sources']) != 2:
+def double_connection(check, task, source_1=None, source_2=None):
+    if not source_1 and not source_2:
+        source_1, source_2 = task['sources']
+    elif not source_1:
+        (source_1,) = task['sources']
+    elif not source_2:
+        (source_2,) = task['sources']
+    elif task['sources']:
         raise ValueError('wrong number of connections for check {}'.format(check['_id']))
 
     def decorator(target_func):
@@ -43,17 +50,17 @@ def double_connection(check, task):
             @functools.wraps(target_func)
             async def result_func(*args):
                 fwd = []
-                for con_data in task['sources']:
-                    con = await DB.AsyncConnection(con_data['class_name']).get(con_data['connection_string'])
-                    fwd += con, con_data['ops']
+                for soruce in source_1, source_2:
+                    con = await DB.AsyncConnection(soruce['class_name']).get(soruce['connection_string'])
+                    fwd += con, soruce['ops']
                 return await target_func(*args, *fwd)
         else:
             @functools.wraps(target_func)
             async def result_func(*args):
                 fwd = []
-                for con_data in task['sources']:
-                    con = DB.OracleConnection(con_data['class_name'], con_data['connection_string'])
-                    fwd += con, con_data['ops']
+                for soruce in source_1, source_2:
+                    con = DB.OracleConnection(soruce['class_name'], soruce['connection_string'])
+                    fwd += con, soruce['ops']
                 return target_func(*args, *fwd)
         return result_func
     return decorator

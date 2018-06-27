@@ -50,7 +50,7 @@ def start(port_str):
     app.router.add_get('/', index)
     app.router.add_post('/entry/', entry)
     app['port'] = port_str
-    web.run_app(app, loop=aio.aio.get_event_loop(), port=int(port_str))
+    web.run_app(app, port=int(port_str))
 
 
 if __name__ == '__main__':
