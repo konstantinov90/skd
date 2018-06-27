@@ -286,7 +286,7 @@ def init(loop):
 
     app = web.Application(loop=loop, middlewares=middlewares)
 
-    cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True)})
+    cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(expose_headers='*', allow_headers='*', allow_credentials=True)})
 
     # fernet_key = fernet.Fernet.generate_key()
     # secret_key = base64.urlsafe_b64decode(fernet_key)
