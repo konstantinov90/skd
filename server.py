@@ -146,7 +146,9 @@ async def get_file(request):
 
     resp = web.StreamResponse(headers=MultiDict({
         'CONTENT-DISPOSITION': cnt_dsp,
-        'Content-Type': content_type
+        'Content-Type': content_type,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': '*',
     }))
     filepath = os.path.join(settings.CHECK_RESULT_PATH, filename)
     resp.content_length = os.stat(filepath).st_size
