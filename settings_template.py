@@ -18,6 +18,8 @@ DEBUG = True
 
 PORT = 9000
 
+WORKER_PORTS = 9999, 9998
+
 REPOS = {
     "TS": 'git.rosenergo.com:u/konstantinov/SKD/TS',
     "TSIII": 'git.rosenergo.com:u/konstantinov/SKD/TSIII',

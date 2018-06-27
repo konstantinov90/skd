@@ -1,6 +1,11 @@
+aiofiles
 aiohttp
+aiohttp_cors
+aiohttp_auth
+cx_Oracle
 gitpython
 motor
-cx_Oracle
 psycopg2
+pyyaml
 vertica_python
+xlsxwriter

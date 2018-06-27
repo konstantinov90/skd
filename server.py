@@ -152,7 +152,7 @@ async def get_file(request):
     resp.content_length = os.stat(filepath).st_size
     await resp.prepare(request)
     async with aiofiles.open(filepath, 'rb') as fd:
-        resp.write(await fd.read())
+        await resp.write(await fd.read())
     return resp
 
 async def queue_size(request):
