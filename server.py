@@ -301,7 +301,7 @@ def init(loop):
     for route, dimension in zip(('cache', 'tasks', 'checks'), (Cache, Task, Check)):
         cors.add(app.router.add_post(f'/rest/{route}/', getter(dimension)))
     cors.add(app.router.add_post('/rest/get_last_checks/', cached_get_last_checks))
-    cors.add(app.router.add_get('/files/{filename}/', get_file))
+    cors.add(app.router.add_get('/files/{filename}', get_file))
     app.router.add_post('/archive/', get_archive)
     app.router.add_get('/archive/', get_archive)
     app.router.add_get('/queue_size/', queue_size)
