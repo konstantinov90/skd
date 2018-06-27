@@ -28,10 +28,10 @@ def single_connection(check, task, source=None):
                 (source,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
                 con = await DB.AsyncConnection(source['class_name']).get(source['connection_string'])
-                return await target_func(*args, con, source.get('ops', []))
+                return await target_func(*args, con, source.get('ops', {}))
             else:
                 con = DB.Connection(source['class_name'], source['connection_string'])
-                return target_func(*args, con, source.get('ops', []))
+                return target_func(*args, con, source.get('ops', {}))
         return result_func
     return decorator
 
@@ -52,7 +52,7 @@ def double_connection(check, task, source_1=None, source_2=None):
                 fwd = []
                 for soruce in source_1, source_2:
                     con = await DB.AsyncConnection(soruce['class_name']).get(soruce['connection_string'])
-                    fwd += con, soruce.get('ops', [])
+                    fwd += con, soruce.get('ops', {})
                 return await target_func(*args, *fwd)
         else:
             @functools.wraps(target_func)
@@ -60,7 +60,7 @@ def double_connection(check, task, source_1=None, source_2=None):
                 fwd = []
                 for soruce in source_1, source_2:
                     con = DB.OracleConnection(soruce['class_name'], soruce['connection_string'])
-                    fwd += con, soruce.get('ops', [])
+                    fwd += con, soruce.get('ops', {})
                 return target_func(*args, *fwd)
         return result_func
     return decorator

@@ -230,3 +230,8 @@ POST на ${SKD_URL}/rest/get_last_checks/
 GET ${SKD_URL}/files/${check.filename}
 
 где check.filename - это поле filename из документа check
+
+
+# КАК ПИСАТЬ ПРОВЕРКИ
+
+смотри ТЗ
