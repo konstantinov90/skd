@@ -20,12 +20,12 @@ import motor.motor_asyncio
 import imp
 
 
-def single_connection(check, task, source=None):
+def single_connection(check, task, _source=None):
+    if not source:
+        (source,) = task['sources']
     def decorator(target_func):
         @functools.wraps(target_func)
         async def result_func(*args):
-            if not source:
-                (source,) = task['sources']
             if inspect.iscoroutinefunction(target_func):
                 con = await DB.AsyncConnection(source['class_name']).get(source['connection_string'])
                 return await target_func(*args, con, source.get('ops', {}))
