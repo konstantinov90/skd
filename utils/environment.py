@@ -22,12 +22,13 @@ import imp
 
 def single_connection(check, task, _source=None):
     def decorator(target_func):
-        if _source:
-            source = _source
-        else:
-            (source,) = task['sources']
         @functools.wraps(target_func)
         async def result_func(*args):
+            if _source:
+                source = _source
+            else:
+                (source,) = task['sources']
+
             if inspect.iscoroutinefunction(target_func):
                 con = await DB.AsyncConnection(source['class_name']).get(source['connection_string'])
                 return await target_func(*args, con, source.get('ops', {}))
