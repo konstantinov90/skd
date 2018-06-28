@@ -20,9 +20,11 @@ import motor.motor_asyncio
 import imp
 
 
-def single_connection(check, task, source=None):
+def single_connection(check, task, _source=None):
     def decorator(target_func):
-        if not source:
+        if _source:
+            source = _source
+        else:
             (source,) = task['sources']
         @functools.wraps(target_func)
         async def result_func(*args):
