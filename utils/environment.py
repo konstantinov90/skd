@@ -20,7 +20,7 @@ import motor.motor_asyncio
 import imp
 
 
-def single_connection(check, task, _source=None):
+def single_connection(check, task, source=None):
     if not source:
         (source,) = task['sources']
     def decorator(target_func):
