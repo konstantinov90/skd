@@ -21,9 +21,9 @@ import imp
 
 
 def single_connection(check, task, source=None):
-    if not source:
-        (source,) = task['sources']
     def decorator(target_func):
+        if not source:
+            (source,) = task['sources']
         @functools.wraps(target_func)
         async def result_func(*args):
             if inspect.iscoroutinefunction(target_func):
@@ -36,16 +36,16 @@ def single_connection(check, task, source=None):
     return decorator
 
 def double_connection(check, task, source_1=None, source_2=None):
-    if not source_1 and not source_2:
-        source_1, source_2 = task['sources']
-    elif not source_1:
-        (source_1,) = task['sources']
-    elif not source_2:
-        (source_2,) = task['sources']
-    elif task['sources']:
-        raise ValueError('wrong number of connections for check {}'.format(check['_id']))
-
     def decorator(target_func):
+        if not source_1 and not source_2:
+            source_1, source_2 = task['sources']
+        elif not source_1:
+            (source_1,) = task['sources']
+        elif not source_2:
+            (source_2,) = task['sources']
+        elif task['sources']:
+            raise ValueError('wrong number of connections for check {}'.format(check['_id']))
+
         if inspect.iscoroutinefunction(target_func):
             @functools.wraps(target_func)
             async def result_func(*args):
