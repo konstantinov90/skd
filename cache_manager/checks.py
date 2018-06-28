@@ -114,11 +114,13 @@ class PyCheck(Check):
         try:
             comp = await aio.async_run(compile, self.content, '<string>', 'single')
             exec(comp)
-        except Exception:
+        except Exception as e:
             LOG.error('error compiling func')
+            print(e)
         else:
             func = locals()['run_check']
             self.meta = await aio.async_run(yaml.load, func.__doc__) if func.__doc__ else {}
+            LOG.info('%s', self.meta)
             if isinstance(self.meta, str):
                 self.meta = {'meta': self.meta}
 
