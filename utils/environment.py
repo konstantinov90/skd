@@ -20,61 +20,61 @@ import motor.motor_asyncio
 import imp
 
 
-def single_connection(check, task, _source=None):
+def single_connection(check, task, source=None):
     def decorator(target_func):
         @functools.wraps(target_func)
         async def result_func(*args):
-            if _source:
-                source = _source
+            if source:
+                _source = source
             else:
-                (source,) = task['sources']
+                (_source,) = task['sources']
 
             if inspect.iscoroutinefunction(target_func):
-                con = await DB.AsyncConnection(source['class_name']).get(source['connection_string'])
-                return await target_func(*args, con, source.get('ops', {}))
+                con = await DB.AsyncConnection(_source['class_name']).get(_source['connection_string'])
+                return await target_func(*args, con, _source.get('ops', {}))
             else:
-                con = DB.Connection(source['class_name'], source['connection_string'])
-                return target_func(*args, con, source.get('ops', {}))
+                con = DB.Connection(_source['class_name'], _source['connection_string'])
+                return target_func(*args, con, _source.get('ops', {}))
         return result_func
     return decorator
 
-def double_connection(check, task, _source_1=None, _source_2=None):
+def double_connection(check, task, source_1=None, source_2=None):
     def decorator(target_func):
         if inspect.iscoroutinefunction(target_func):
             @functools.wraps(target_func)
             async def result_func(*args):
-                if not _source_1 and not _source_2:
-                    source_1, source_2 = task['sources']
-                elif not _source_1:
-                    (source_1,), source_2 = task['sources'], _source_2
+                if not source_1 and not source_2:
+                    _source_1, _source_2 = task['sources']
+                elif not source_1:
+                    (_source_1,), _source_2 = task['sources'], source_2
                 elif not source_2:
-                    source_1, (source_2,) = _source_1, task['sources']
+                    _source_1, (_source_2,) = source_1, task['sources']
                 elif task['sources']:
                     raise ValueError('wrong number of connections for check {}'.format(check['_id']))
                 else:
-                    source_1, source_2 = _source_1, _source_2
+                    _source_1, _source_2 = source_1, source_2
 
                 fwd = []
-                for source in source_1, source_2:
+                for source in _source_1, _source_2:
                     con = await DB.AsyncConnection(source['class_name']).get(source['connection_string'])
                     fwd += con, source.get('ops', {})
                 return await target_func(*args, *fwd)
         else:
             @functools.wraps(target_func)
             async def result_func(*args):
-                if not _source_1 and not _source_2:
-                    source_1, source_2 = task['sources']
-                elif not _source_1:
-                    (source_1,), source_2 = task['sources'], _source_2
+                if not source_1 and not source_2:
+                    _source_1, _source_2 = task['sources']
+                elif not source_1:
+                    (_source_1,), _source_2 = task['sources'], source_2
                 elif not source_2:
-                    source_1, (source_2,) = _source_1, task['sources']
+                    _source_1, (_source_2,) = source_1, task['sources']
                 elif task['sources']:
                     raise ValueError('wrong number of connections for check {}'.format(check['_id']))
                 else:
-                    source_1, source_2 = _source_1, _source_2
+                    _source_1, _source_2 = source_1, source_2
 
                 fwd = []
-                for source in source_1, source_2:
+                for source in _source_1, _source_2:
                     con = DB.OracleConnection(source['class_name'], source['connection_string'])
                     fwd += con, source.get('ops', {})
                 return target_func(*args, *fwd)
