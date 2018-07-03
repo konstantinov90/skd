@@ -99,7 +99,7 @@ class Cache(object):
                     if blob_from:
                         await db.cache.remove(blob_from.data)
                         msg += 'check {} removed\n'.format(blob_from)
-                elif file.change_type == 'A':
+                elif file.change_type in ('A', 'R'):
                     await db.cache.insert(check.data)
                     msg += 'check {} added\n'.format(blob_to)
                 elif re.match(r'^R\d{3}$|^M$', file.change_type):
