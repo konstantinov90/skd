@@ -106,7 +106,7 @@ class Cache(object):
                     await db.cache.update(blob_from.data, check.data, upsert=True)
                     msg += 'check {} updated\n'.format(blob_from)
                 else:
-                    raise ValueError('unexpected change_type for file {}', blob_from)
+                    raise ValueError('unexpected change_type {} for file {}', file.change_type, blob_from)
             cmt = repo.commit()
             self.curr_commit[repo_name] = cmt.hexsha
             athr = cmt.author

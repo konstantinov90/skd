@@ -1,0 +1,9 @@
+version: '2'
+
+services:
+  mongodb:
+    image: 'bitnami/mongodb:latest'
+    ports:
+      - "15015:27017"
+    volumes:
+      - /path/to/mongodb-persistance:/bitnami
