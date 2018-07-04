@@ -95,10 +95,10 @@ output_file_descriptor: True
 {f'result_extension: {ext}' if ext else ''}
 """
 
-        _filename = filename.format(**task['sources'][0]['ops']) if filename is not None and 'sources' in task else check.filename
-
         @functools.wraps(target_func)
         async def result_func(*args):
+            _filename = filename.format(**task['sources'][0]['ops']) if filename is not None and 'sources' in task else check.filename
+
             if inspect.iscoroutinefunction(target_func):
                 async with aiofiles.open(_filename, mode) as fd:
                     res = await target_func(*args, fd)
