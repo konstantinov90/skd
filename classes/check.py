@@ -14,6 +14,7 @@ class Check(BaseDict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.task = None
+        self._rel_filename = None
 
     async def save(self):
         self['latest'] = True
@@ -29,11 +30,17 @@ class Check(BaseDict):
 
     @property
     def rel_filename(self):
-        return '{}_{}_{}_{}.{}.{}'.format(
-            self['task_id'],
-            *at('system', 'operation', 'name', 'extension')(self),
-            self.get('result_extension', 'xlsx'),
-        )
+        if not self_rel_filename:
+            self._rel_filename = '{}_{}_{}_{}.{}.{}'.format(
+                self['task_id'],
+                *at('system', 'operation', 'name', 'extension')(self),
+                self.get('result_extension', 'xlsx'),
+            )
+        return self._rel_filename
+    
+    @rel_filename.setter
+    def rel_filename(self, val):
+        self._rel_filename = val
 
     @property
     def filename(self):

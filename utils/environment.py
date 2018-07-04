@@ -97,13 +97,15 @@ output_file_descriptor: True
 
         @functools.wraps(target_func)
         async def result_func(*args):
-            _filename = filename.format(**task['sources'][0]['ops']) if filename is not None and 'sources' in task else check.filename
+            if filename:
+                check.rel_filename = filename.format(**task['sources'][0]['ops'])
+            # _filename = filename.format(**task['sources'][0]['ops']) if filename is not None and 'sources' in task else check.filename
 
             if inspect.iscoroutinefunction(target_func):
-                async with aiofiles.open(_filename, mode) as fd:
+                async with aiofiles.open(check.filename, mode) as fd:
                     res = await target_func(*args, fd)
             else:
-                fd = await aio.async_run(open, _filename, mode)
+                fd = await aio.async_run(open, check.filename, mode)
                 try:
                     res = await aio.async_run(target_func, *args, fd)
                 finally:
