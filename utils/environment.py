@@ -95,7 +95,7 @@ output_file_descriptor: True
 {f'result_extension: {ext}' if ext else ''}
 """
 
-        _filename = filename.format(**task['sources'][0]['ops']) if filename and 'sources' in task else check.filename
+        _filename = filename.format(**task['sources'][0]['ops']) if filename is not None and 'sources' in task else check.filename
 
         @functools.wraps(target_func)
         async def result_func(*args):
