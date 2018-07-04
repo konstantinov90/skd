@@ -82,7 +82,7 @@ def double_connection(check, task, source_1=None, source_2=None):
     return decorator
 
 
-def output_file_descriptor(check, task, ext=None, bin=False):
+def output_file_descriptor(check, task, ext=None, bin=False, filename=None):
     def decorator(target_func):
         # filename = lambda: check['result_filename'] + ('.' + ext if ext else '')
         if bin:
@@ -95,13 +95,15 @@ output_file_descriptor: True
 {f'result_extension: {ext}' if ext else ''}
 """
 
+        _filename = filename.format(**task['sources'][0]['ops']) if filename else check.filename
+
         @functools.wraps(target_func)
         async def result_func(*args):
             if inspect.iscoroutinefunction(target_func):
-                async with aiofiles.open(check.filename, mode) as fd:
+                async with aiofiles.open(_filename, mode) as fd:
                     res = await target_func(*args, fd)
             else:
-                fd = await aio.async_run(open, check.filename, mode)
+                fd = await aio.async_run(open, _filename, mode)
                 try:
                     res = await aio.async_run(target_func, *args, fd)
                 finally:
