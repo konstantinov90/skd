@@ -30,7 +30,7 @@ class Check(BaseDict):
 
     @property
     def rel_filename(self):
-        if not self_rel_filename:
+        if not self._rel_filename:
             self._rel_filename = '{}_{}_{}_{}.{}.{}'.format(
                 self['task_id'],
                 *at('system', 'operation', 'name', 'extension')(self),
