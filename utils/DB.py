@@ -171,11 +171,16 @@ class _DBConnection(object):
 
         return db_res
 
-
+def OraNumConverter(val):
+    try:
+        return int(val)
+    except ValueError:
+        return decimal.Decimal(val.replace(',', '.'))
 
 def OraTypeHandler(cursor, name, defaultType, size, precision, scale):
     if defaultType == cx_Oracle.NUMBER:
-        return cursor.var(str, 100, cursor.arraysize, outconverter=decimal.Decimal)
+        return cursor.var(str, 100, cursor.arraysize, outconverter=OraNumConverter)
+
 def filter_dict(dct, subdict):
     return {i: v for i, v in dct.items() if i.upper() in subdict}
 
