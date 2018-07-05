@@ -73,6 +73,8 @@ class _DBConnection(object):
 
     async def _init(self):
         self.con = await aio.async_run(self.con_func)
+        if hasattr(self.con, 'outputtypehandler'):
+            self.con.outputtypehandler = OraTypeHandler
 
     def __init__(self):
         self.con = None
@@ -194,7 +196,8 @@ class OracleConnection(_DBConnection):
         self.con_func = partial(cx_Oracle.connect, *args, **kwargs)
         if not do_not_connect:
             self.con = self.con_func()
-        self.con.outputtypehandler = OraTypeHandler
+        if self.con:
+            self.con.outputtypehandler = OraTypeHandler
 
     @staticmethod
     def _run_query(curs, query, input_data):
