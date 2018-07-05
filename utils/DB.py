@@ -1,5 +1,5 @@
 """DB module contains DBConnection classes and process_cursor decorator."""
-# import decimal
+import decimal
 # import copy
 from contextlib import contextmanager
 from functools import partial, wraps
@@ -171,9 +171,9 @@ class _DBConnection(object):
 
 
 
-# def OraTypeHandler(cursor, name, defaultType, size, precision, scale):
-#     if defaultType == cx_Oracle.NUMBER:
-#         return cursor.var(str, 100, cursor.arraysize, outconverter=decimal.Decimal)
+def OraTypeHandler(cursor, name, defaultType, size, precision, scale):
+    if defaultType == cx_Oracle.NUMBER:
+        return cursor.var(str, 100, cursor.arraysize, outconverter=decimal.Decimal)
 def filter_dict(dct, subdict):
     return {i: v for i, v in dct.items() if i.upper() in subdict}
 
@@ -194,7 +194,7 @@ class OracleConnection(_DBConnection):
         self.con_func = partial(cx_Oracle.connect, *args, **kwargs)
         if not do_not_connect:
             self.con = self.con_func()
-        # self.con.outputtypehandler = OraTypeHandler
+        self.con.outputtypehandler = OraTypeHandler
 
     @staticmethod
     def _run_query(curs, query, input_data):
